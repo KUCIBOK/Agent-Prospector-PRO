@@ -1,0 +1,150 @@
+version: '3.9'
+
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: kucibok-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-kucibok}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-kucibok_prospector}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kucibok}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kucibok
+
+  redis:
+    image: redis:7-alpine
+    container_name: kucibok-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kucibok
+
+  ai:
+    image: ollama/ollama:latest
+    container_name: kucibok-ollama
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-0.0.0.0:11434}
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    networks:
+      - kucibok
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kucibok-app
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-kucibok}:${DB_PASSWORD:-changeme}@database:5432/${DB_NAME:-kucibok_prospector}
+      - REDIS_URL=redis://redis:6379
+      - OLLAMA_HOST=http://ai:11434
+      - MODEL_NAME=${MODEL_NAME:-llama2}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DEBUG=${DEBUG:-false}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - kucibok
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kucibok-worker
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-kucibok}:${DB_PASSWORD:-changeme}@database:5432/${DB_NAME:-kucibok_prospector}
+      - REDIS_URL=redis://redis:6379
+      - OLLAMA_HOST=http://ai:11434
+      - MODEL_NAME=${MODEL_NAME:-llama2}
+      - DEBUG=${DEBUG:-false}
+    depends_on:
+      - database
+      - redis
+      - ai
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    command: celery -A app.workers.tasks worker --loglevel=info
+    networks:
+      - kucibok
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kucibok-scheduler
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-kucibok}:${DB_PASSWORD:-changeme}@database:5432/${DB_NAME:-kucibok_prospector}
+      - REDIS_URL=redis://redis:6379
+      - OLLAMA_HOST=http://ai:11434
+      - MODEL_NAME=${MODEL_NAME:-llama2}
+      - DEBUG=${DEBUG:-false}
+    depends_on:
+      - database
+      - redis
+      - ai
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    command: python -m app.scheduler.main
+    networks:
+      - kucibok
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: kucibok-dashboard
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_DEBUG=${DEBUG:-false}
+    depends_on:
+      - app
+    networks:
+      - kucibok
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+
+networks:
+  kucibok:
+    driver: bridge

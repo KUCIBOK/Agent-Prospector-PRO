@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kucibok-prospector"
+version = "1.1.0"
+description = "Autonomous agent for discovering African artists and international curators"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Kucibok Team"}
+]
+keywords = ["art", "discovery", "curator", "artist", "africa", "saas"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    # Core framework
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-dotenv>=1.0.0",
+
+    # Database & ORM
+    "sqlalchemy>=2.0.0",
+    "sqlmodel>=0.0.14",
+    "alembic>=1.13.0",
+    "psycopg[binary]>=3.17.0",
+
+    # Data validation
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+
+    # Web scraping & HTTP
+    "requests>=2.31.0",
+    "httpx>=0.25.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=4.9.0",
+    "playwright>=1.40.0",
+
+    # Async & Jobs
+    "celery[redis]>=5.3.0",
+    "redis>=5.0.0",
+    "apscheduler>=3.10.0",
+
+    # AI / LLM
+    "ollama>=0.1.0",
+
+    # Logging & Monitoring
+    "python-json-logger>=2.0.0",
+
+    # Utilities
+    "python-multipart>=0.0.6",
+    "email-validator>=2.1.0",
+    "pycountry>=23.12.11",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.12.0",
+    "isort>=5.13.0",
+    "flake8>=6.1.0",
+    "mypy>=1.7.0",
+    "ruff>=0.1.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+disallow_untyped_defs = true
+warn_unused_configs = true
