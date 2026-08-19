@@ -29,6 +29,14 @@ async def lifespan(app: FastAPI):
     logger.info(f"   API: http://{settings.api_host}:{settings.api_port}")
     logger.info(f"   Debug: {settings.debug}")
     logger.info(f"   Model: {settings.model_name}")
+
+    # Initialize database
+    from app.db import init_db
+    try:
+        init_db()
+    except Exception as e:
+        logger.error(f"❌ Database initialization failed: {e}")
+
     yield
     # Shutdown
     logger.info("🛑 Kucibok Prospector shutting down...")
@@ -97,19 +105,14 @@ async def root():
 
 
 # ============================================================================
-# Module Imports (placeholder for future routes)
+# Route Imports & Registration
 # ============================================================================
 
-# TODO: Import & include routers as they're implemented
-# from app.api.prospects import router as prospects_router
-# from app.api.messages import router as messages_router
-# from app.api.monitoring import router as monitoring_router
-# from app.api.admin import router as admin_router
+from app.api import prospects_router, messages_router, monitoring_router
 
-# app.include_router(prospects_router, prefix="/api/prospects", tags=["prospects"])
-# app.include_router(messages_router, prefix="/api/messages", tags=["messages"])
-# app.include_router(monitoring_router, prefix="/api/monitoring", tags=["monitoring"])
-# app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+app.include_router(prospects_router, prefix="/api", tags=["prospects"])
+app.include_router(messages_router, prefix="/api", tags=["messages"])
+app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
 
 
 if __name__ == "__main__":
