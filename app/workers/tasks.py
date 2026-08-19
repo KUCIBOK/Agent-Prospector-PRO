@@ -34,16 +34,16 @@ def run_discovery(self) -> dict:
     """
     Run Client & Artist Discovery.
 
-    Should:
-    1. Generate discovery queries
-    2. Execute searches
-    3. Parse results
-    4. Create/update prospects
+    Discovers:
+    1. Artists (emerging & established)
+    2. Clients (advisors, curators, galleries)
     """
     session = SessionLocal()
     job = None
 
     try:
+        from app.services.discovery import DiscoveryEngine
+
         # Create job record
         job = Job(
             job_type=JobType.DISCOVERY,
@@ -56,18 +56,33 @@ def run_discovery(self) -> dict:
 
         logger.info(f"🔍 Running Discovery (Job #{job.id})...")
 
-        # TODO: Implement actual discovery logic
-        result_count = 0
+        engine = DiscoveryEngine(session)
+
+        # Discover artists
+        artist_results = engine.discover_artists(limit=50)
+        artist_count = artist_results["discovered"]
+
+        # Discover clients
+        client_results = engine.discover_clients(limit=50)
+        client_count = client_results["discovered"]
+
+        total = artist_count + client_count
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
         job.completed_at = datetime.utcnow()
-        job.result_count = result_count
+        job.result_count = total
         session.add(job)
         session.commit()
 
-        logger.info(f"✅ Discovery complete: {result_count} prospects found")
-        return {"job_id": job.id, "status": "SUCCESS", "result_count": result_count}
+        logger.info(f"✅ Discovery complete: {total} prospects found ({artist_count} artists, {client_count} clients)")
+        return {
+            "job_id": job.id,
+            "status": "SUCCESS",
+            "result_count": total,
+            "artists": artist_count,
+            "clients": client_count,
+        }
 
     except Exception as exc:
         logger.error(f"❌ Discovery failed: {str(exc)}", exc_info=True)
@@ -83,7 +98,6 @@ def run_discovery(self) -> dict:
             session.commit()
             log_job_error(job.id, str(exc))
 
-        # Retry
         raise self.retry(exc=exc, countdown=60)
 
     finally:
@@ -95,16 +109,19 @@ def run_crawling(self) -> dict:
     """
     Run web crawling for identified prospects.
 
-    Should:
-    1. Get prospects needing crawling
-    2. Crawl their websites/profiles
-    3. Extract data
-    4. Update sources
+    Crawls:
+    1. Prospect websites
+    2. Extract data (emails, social links, content)
+    3. Update source tracking
     """
     session = SessionLocal()
     job = None
 
     try:
+        from app.services.crawler import Crawler
+        from app.models import Prospect, ProspectStatus
+        from sqlmodel import select
+
         job = Job(
             job_type=JobType.CRAWLING,
             status=JobStatus.RUNNING,
@@ -116,8 +133,32 @@ def run_crawling(self) -> dict:
 
         logger.info(f"🕷️  Running Crawling (Job #{job.id})...")
 
-        # TODO: Implement actual crawling logic
+        crawler = Crawler()
+
+        # Get prospects with websites to crawl
+        prospects = session.exec(
+            select(Prospect)
+            .where(Prospect.website.isnot(None))
+            .where(Prospect.status == ProspectStatus.IDENTIFIED)
+            .limit(50)
+        ).all()
+
         result_count = 0
+        for prospect in prospects:
+            try:
+                if prospect.website:
+                    crawl_result = crawler.crawl_website(prospect.website)
+
+                    if crawl_result.status == "SUCCESS":
+                        # Update prospect with crawled data
+                        if crawler.update_prospect_from_crawl(prospect, crawl_result):
+                            session.add(prospect)
+                            result_count += 1
+
+                    session.commit()
+
+            except Exception as e:
+                logger.error(f"Error crawling {prospect.name}: {str(e)}")
 
         job.status = JobStatus.SUCCESS
         job.completed_at = datetime.utcnow()
@@ -153,16 +194,17 @@ def run_enrichment(self) -> dict:
     """
     Run data enrichment for prospects.
 
-    Should:
-    1. Get prospects needing enrichment
-    2. Fill missing data
-    3. Normalize values
-    4. Update records
+    Enriches:
+    1. Normalize country, email, URL, name
+    2. Detect intent signals
+    3. Fill missing data
     """
     session = SessionLocal()
     job = None
 
     try:
+        from app.services.enrichment import Enrichment
+
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
@@ -174,17 +216,17 @@ def run_enrichment(self) -> dict:
 
         logger.info(f"🔄 Running Enrichment (Job #{job.id})...")
 
-        # TODO: Implement actual enrichment logic
-        result_count = 0
+        enricher = Enrichment(session)
+        results = enricher.bulk_enrich_prospects(limit=100)
 
         job.status = JobStatus.SUCCESS
         job.completed_at = datetime.utcnow()
-        job.result_count = result_count
+        job.result_count = results["enriched"]
         session.add(job)
         session.commit()
 
-        logger.info(f"✅ Enrichment complete: {result_count} prospects enriched")
-        return {"job_id": job.id, "status": "SUCCESS", "result_count": result_count}
+        logger.info(f"✅ Enrichment complete: {results['enriched']} prospects enriched")
+        return {"job_id": job.id, "status": "SUCCESS", "result_count": results["enriched"]}
 
     except Exception as exc:
         logger.error(f"❌ Enrichment failed: {str(exc)}", exc_info=True)
@@ -211,16 +253,35 @@ def run_scoring(self) -> dict:
     """
     Run scoring for all prospects.
 
-    Should:
-    1. Get prospects needing scoring
-    2. Calculate fit scores
-    3. Update priority
-    4. Generate outreach messages if P1-P3
+    Scores:
+    1. Analyze prospects (AI-powered)
+    2. Calculate Artist Fit / SaaS Fit scores
+    3. Determine Priority (P1–P4)
+    4. Generate outreach messages
     """
     session = SessionLocal()
     job = None
 
     try:
+        from app.services.analysis import AnalysisService
+        from app.services.scoring import (
+            calculate_artist_fit_score,
+            calculate_saas_fit_score,
+            calculate_confidence_score,
+            calculate_priority,
+        )
+        from app.services.outreach import generate_message_variants
+        from app.models import (
+            Prospect,
+            ProspectType,
+            ProspectStatus,
+            Score,
+            ScoreType,
+            Message,
+        )
+        from app.ai.providers import get_ai_provider
+        from sqlmodel import select
+
         job = Job(
             job_type=JobType.SCORING,
             status=JobStatus.RUNNING,
@@ -232,8 +293,77 @@ def run_scoring(self) -> dict:
 
         logger.info(f"📊 Running Scoring (Job #{job.id})...")
 
-        # TODO: Implement actual scoring logic
+        ai_provider = get_ai_provider()
+        analyzer = AnalysisService(session, ai_provider)
+
+        # Batch analyze prospects
+        analyzer.batch_analyze_prospects(limit=100)
+
+        # Score and generate messages
+        prospects = session.exec(
+            select(Prospect)
+            .where(Prospect.status == ProspectStatus.IDENTIFIED)
+            .limit(100)
+        ).all()
+
         result_count = 0
+        for prospect in prospects:
+            try:
+                # Analyze prospect
+                analysis = analyzer.analyze_prospect(prospect)
+
+                # Calculate scores
+                if prospect.type == ProspectType.ARTIST:
+                    score, breakdown = calculate_artist_fit_score(prospect)
+                    score_type = ScoreType.ARTIST_FIT
+                else:
+                    score, breakdown = calculate_saas_fit_score(prospect)
+                    score_type = ScoreType.SAAS_FIT
+
+                # Confidence
+                confidence = calculate_confidence_score(prospect)
+                priority = calculate_priority(score, confidence)
+
+                # Update prospect
+                prospect.score = score
+                prospect.confidence = confidence
+                prospect.priority = priority
+                prospect.status = ProspectStatus.PREQUALIFIED
+
+                # Store score
+                score_record = Score(
+                    prospect_id=prospect.id,
+                    score_type=score_type,
+                    score=score,
+                    breakdown=breakdown,
+                )
+                session.add(score_record)
+
+                # Generate outreach messages if P1-P2
+                if priority and priority.value in ["P1", "P2"]:
+                    variants = generate_message_variants(
+                        prospect,
+                        analysis.get("reason_to_contact"),
+                        count=3,
+                    )
+
+                    for variant in variants:
+                        message = Message(
+                            prospect_id=prospect.id,
+                            persona=variant["persona"],
+                            variant_label=variant["variant_label"],
+                            content=variant["content"],
+                            status=variant["status"],
+                        )
+                        session.add(message)
+
+                session.add(prospect)
+                result_count += 1
+
+            except Exception as e:
+                logger.error(f"Error scoring {prospect.name}: {str(e)}")
+
+        session.commit()
 
         job.status = JobStatus.SUCCESS
         job.completed_at = datetime.utcnow()

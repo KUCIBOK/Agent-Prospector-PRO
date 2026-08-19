@@ -13,6 +13,10 @@ from app.services.outreach import (
     generate_message_variant,
     generate_message_variants,
 )
+from app.services.discovery import DiscoveryEngine, SearchQuery
+from app.services.crawler import Crawler, CrawlResult
+from app.services.enrichment import Enrichment
+from app.services.analysis import AnalysisService
 
 __all__ = [
     # Scoring
@@ -24,4 +28,14 @@ __all__ = [
     "detect_persona",
     "generate_message_variant",
     "generate_message_variants",
+    # Discovery
+    "DiscoveryEngine",
+    "SearchQuery",
+    # Crawler
+    "Crawler",
+    "CrawlResult",
+    # Enrichment
+    "Enrichment",
+    # Analysis
+    "AnalysisService",
 ]
