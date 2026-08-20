@@ -111,20 +111,21 @@ class Settings(BaseSettings):
     # ========================================================================
     # Security
     # ========================================================================
-    cors_origins: list[str] = [
-        origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(
-            ","
-        )
-    ]
-    allowed_hosts: list[str] = [
-        host.strip()
-        for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    ]
+    cors_origins_str: str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
+    allowed_hosts_str: str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins_str.split(",")]
+
+    @property
+    def allowed_hosts(self) -> list[str]:
+        return [host.strip() for host in self.allowed_hosts_str.split(",")]
 
     class Config:
         case_sensitive = False
         env_file = ".env"
+        extra = 'ignore'  # Ignore extra fields from .env
 
 
 # Global settings instance
