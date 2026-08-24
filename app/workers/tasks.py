@@ -95,6 +95,134 @@ def detect_intent_signals(self) -> dict:
         session.close()
 
 
+@app.task(bind=True, max_retries=2)
+def analyze_instagram_artists(self) -> dict:
+    """
+    Daily task: Analyze all artists' Instagram profiles.
+
+    Detects:
+    - EMERGING vs ESTABLISHED (follower count, engagement)
+    - Quality score (engagement rate, post frequency, bio)
+    - Signals for high-quality profiles
+    """
+    session = SessionLocal()
+    job = None
+
+    try:
+        from app.services.instagram_artist_analyzer import InstagramArtistAnalyzer
+
+        # Create job record
+        job = Job(
+            job_type=JobType.ENRICHMENT,
+            status=JobStatus.RUNNING,
+            started_at=datetime.utcnow(),
+        )
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+
+        logger.info(f"📱 Analyzing Instagram artists (Job #{job.id})...")
+
+        analyzer = InstagramArtistAnalyzer(session)
+        results = analyzer.bulk_analyze_artists()
+
+        # Mark job as success
+        job.status = JobStatus.SUCCESS
+        job.completed_at = datetime.utcnow()
+        job.result_count = len(results)
+        session.add(job)
+        session.commit()
+
+        logger.info(f"✅ Instagram analysis complete: {len(results)} artists analyzed")
+        return {
+            "job_id": job.id,
+            "status": "SUCCESS",
+            "artists_analyzed": len(results),
+        }
+
+    except Exception as exc:
+        logger.error(f"❌ Instagram analysis failed: {str(exc)}", exc_info=True)
+
+        if job:
+            job.attempts += 1
+            if job.attempts < 3:
+                job.status = JobStatus.RETRYING
+            else:
+                job.status = JobStatus.FAILED
+            job.error_message = str(exc)
+            session.add(job)
+            session.commit()
+
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+    finally:
+        session.close()
+
+
+@app.task(bind=True, max_retries=2)
+def monitor_linkedin_curators(self) -> dict:
+    """
+    Daily task: Monitor LinkedIn curator profiles for changes.
+
+    Detects:
+    - Title changes
+    - Company changes
+    - New activity signals
+    """
+    session = SessionLocal()
+    job = None
+
+    try:
+        from app.services.linkedin_curator_finder import LinkedInCuratorFinder
+
+        # Create job record
+        job = Job(
+            job_type=JobType.ENRICHMENT,
+            status=JobStatus.RUNNING,
+            started_at=datetime.utcnow(),
+        )
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+
+        logger.info(f"💼 Monitoring LinkedIn curators (Job #{job.id})...")
+
+        curator_finder = LinkedInCuratorFinder(session)
+        signals = curator_finder.monitor_linkedin_changes()
+
+        # Mark job as success
+        job.status = JobStatus.SUCCESS
+        job.completed_at = datetime.utcnow()
+        job.result_count = len(signals)
+        session.add(job)
+        session.commit()
+
+        logger.info(f"✅ LinkedIn monitoring complete: {len(signals)} changes detected")
+        return {
+            "job_id": job.id,
+            "status": "SUCCESS",
+            "signals_detected": len(signals),
+        }
+
+    except Exception as exc:
+        logger.error(f"❌ LinkedIn monitoring failed: {str(exc)}", exc_info=True)
+
+        if job:
+            job.attempts += 1
+            if job.attempts < 3:
+                job.status = JobStatus.RETRYING
+            else:
+                job.status = JobStatus.FAILED
+            job.error_message = str(exc)
+            session.add(job)
+            session.commit()
+
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+    finally:
+        session.close()
+
+
 @app.task(bind=True, max_retries=3)
 def run_discovery(self) -> dict:
     """

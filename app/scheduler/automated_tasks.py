@@ -142,6 +142,24 @@ def run_daily_analytics():
         session.close()
 
 
+def run_instagram_analysis_job():
+    """Analyze artists on Instagram (7 AM daily)."""
+    from app.workers.tasks import analyze_instagram_artists
+
+    logger.info("📱 Queuing Instagram artist analysis job...")
+    task = analyze_instagram_artists.delay()
+    logger.info(f"   ✅ Task queued: {task.id}")
+
+
+def run_linkedin_monitoring_job():
+    """Monitor LinkedIn curators for changes (5 AM daily)."""
+    from app.workers.tasks import monitor_linkedin_curators
+
+    logger.info("💼 Queuing LinkedIn curator monitoring job...")
+    task = monitor_linkedin_curators.delay()
+    logger.info(f"   ✅ Task queued: {task.id}")
+
+
 def start_automation_scheduler():
     """Start the automation scheduler."""
     if not settings.scheduler_enabled:
@@ -159,6 +177,26 @@ def start_automation_scheduler():
         replace_existing=True,
     )
     logger.info("📍 Scheduled: Daily prospecting at 3:00 AM")
+
+    # 🔗 LinkedIn Curator Monitoring (5 AM)
+    scheduler.add_job(
+        func=run_linkedin_monitoring_job,
+        trigger=CronTrigger(hour=5, minute=0),  # 5:00 AM
+        id="daily_5am_linkedin",
+        name="Daily 5 AM LinkedIn Monitoring",
+        replace_existing=True,
+    )
+    logger.info("📍 Scheduled: LinkedIn monitoring at 5:00 AM")
+
+    # 📱 Instagram Artist Analysis (7 AM)
+    scheduler.add_job(
+        func=run_instagram_analysis_job,
+        trigger=CronTrigger(hour=7, minute=0),  # 7:00 AM
+        id="daily_7am_instagram",
+        name="Daily 7 AM Instagram Analysis",
+        replace_existing=True,
+    )
+    logger.info("📍 Scheduled: Instagram analysis at 7:00 AM")
 
     # Daily follow-ups (9 AM)
     scheduler.add_job(
@@ -183,6 +221,13 @@ def start_automation_scheduler():
     scheduler.start()
     logger.info("✅ Automation scheduler started!")
     logger.info("🤖 System now running 24/7 prospecting automation")
+    logger.info("")
+    logger.info("📅 Daily Schedule:")
+    logger.info("   3:00 AM - Prospecting (LinkedIn, Google discovery)")
+    logger.info("   5:00 AM - LinkedIn curator monitoring (changes)")
+    logger.info("   7:00 AM - Instagram artist analysis")
+    logger.info("   9:00 AM - Follow-up sequences")
+    logger.info("   6:00 PM - Analytics update")
 
     return scheduler
 

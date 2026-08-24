@@ -146,6 +146,32 @@ def system_info():
     }
 
 
+@router.post("/jobs/analyze-instagram")
+def trigger_instagram_analysis():
+    """Trigger Instagram artist analysis job."""
+    from app.workers.tasks import analyze_instagram_artists
+
+    task = analyze_instagram_artists.delay()
+    return {
+        "status": "queued",
+        "task_id": task.id,
+        "message": "Instagram artist analysis job queued",
+    }
+
+
+@router.post("/jobs/monitor-linkedin")
+def trigger_linkedin_monitoring():
+    """Trigger LinkedIn curator monitoring job."""
+    from app.workers.tasks import monitor_linkedin_curators
+
+    task = monitor_linkedin_curators.delay()
+    return {
+        "status": "queued",
+        "task_id": task.id,
+        "message": "LinkedIn curator monitoring job queued",
+    }
+
+
 @router.get("/signals/recent")
 def recent_signals(
     session: Session = Depends(get_session),
