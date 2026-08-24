@@ -146,6 +146,19 @@ def system_info():
     }
 
 
+@router.post("/jobs/rescore-artists-advanced")
+def trigger_artist_rescoring():
+    """Trigger advanced artist re-scoring job."""
+    from app.workers.tasks import rescore_artists_advanced
+
+    task = rescore_artists_advanced.delay()
+    return {
+        "status": "queued",
+        "task_id": task.id,
+        "message": "Advanced artist re-scoring job queued",
+    }
+
+
 @router.post("/jobs/analyze-instagram")
 def trigger_instagram_analysis():
     """Trigger Instagram artist analysis job."""

@@ -142,6 +142,15 @@ def run_daily_analytics():
         session.close()
 
 
+def run_advanced_artist_rescoring_job():
+    """Re-score artists with advanced metrics (Sunday 4 AM)."""
+    from app.workers.tasks import rescore_artists_advanced
+
+    logger.info("📊 Queuing advanced artist re-scoring job...")
+    task = rescore_artists_advanced.delay()
+    logger.info(f"   ✅ Task queued: {task.id}")
+
+
 def run_instagram_analysis_job():
     """Analyze artists on Instagram (7 AM daily)."""
     from app.workers.tasks import analyze_instagram_artists
@@ -198,6 +207,16 @@ def start_automation_scheduler():
     )
     logger.info("📍 Scheduled: Instagram analysis at 7:00 AM")
 
+    # 📊 Advanced Artist Re-scoring (Sunday 4 AM)
+    scheduler.add_job(
+        func=run_advanced_artist_rescoring_job,
+        trigger=CronTrigger(day_of_week=6, hour=4, minute=0),  # Sunday 4 AM
+        id="weekly_sunday_4am_rescoring",
+        name="Weekly Sunday 4 AM Artist Re-scoring",
+        replace_existing=True,
+    )
+    logger.info("📍 Scheduled: Advanced artist re-scoring every Sunday at 4:00 AM")
+
     # Daily follow-ups (9 AM)
     scheduler.add_job(
         func=run_daily_follow_ups,
@@ -222,12 +241,16 @@ def start_automation_scheduler():
     logger.info("✅ Automation scheduler started!")
     logger.info("🤖 System now running 24/7 prospecting automation")
     logger.info("")
-    logger.info("📅 Daily Schedule:")
-    logger.info("   3:00 AM - Prospecting (LinkedIn, Google discovery)")
-    logger.info("   5:00 AM - LinkedIn curator monitoring (changes)")
-    logger.info("   7:00 AM - Instagram artist analysis")
-    logger.info("   9:00 AM - Follow-up sequences")
-    logger.info("   6:00 PM - Analytics update")
+    logger.info("📅 Automation Schedule:")
+    logger.info("   Every day:")
+    logger.info("     3:00 AM - Prospecting (LinkedIn, Google discovery)")
+    logger.info("     5:00 AM - LinkedIn curator monitoring (changes)")
+    logger.info("     7:00 AM - Instagram artist analysis")
+    logger.info("     9:00 AM - Follow-up sequences")
+    logger.info("     6:00 PM - Analytics update")
+    logger.info("   Every Sunday:")
+    logger.info("     4:00 AM - Advanced artist re-scoring (fairs, galleries, awards)")
+    logger.info("")
 
     return scheduler
 

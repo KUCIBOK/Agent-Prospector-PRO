@@ -30,6 +30,74 @@ def log_job_error(job_id: int, error_msg: str, stack_trace: str = None) -> None:
 
 
 @app.task(bind=True, max_retries=2)
+def rescore_artists_advanced(self) -> dict:
+    """
+    Weekly task: Re-score all artists with advanced scoring.
+
+    Advanced bonuses:
+    - Major fair participation (+8-10)
+    - Instagram growth trajectory (+5-7)
+    - Prestigious gallery representation (+10)
+    - International awards/residencies (+8)
+    - Media mentions/press (+5)
+
+    Result: Better identification of professional, market-ready artists.
+    """
+    session = SessionLocal()
+    job = None
+
+    try:
+        from app.services.advanced_artist_scoring import AdvancedArtistScorer
+
+        # Create job record
+        job = Job(
+            job_type=JobType.SCORING,
+            status=JobStatus.RUNNING,
+            started_at=datetime.utcnow(),
+        )
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+
+        logger.info(f"📊 Advanced artist re-scoring (Job #{job.id})...")
+
+        scorer = AdvancedArtistScorer(session)
+        results = scorer.bulk_rescore_artists()
+
+        # Mark job as success
+        job.status = JobStatus.SUCCESS
+        job.completed_at = datetime.utcnow()
+        job.result_count = len(results)
+        session.add(job)
+        session.commit()
+
+        logger.info(f"✅ Advanced re-scoring complete: {len(results)} artists updated")
+        return {
+            "job_id": job.id,
+            "status": "SUCCESS",
+            "artists_rescored": len(results),
+        }
+
+    except Exception as exc:
+        logger.error(f"❌ Advanced re-scoring failed: {str(exc)}", exc_info=True)
+
+        if job:
+            job.attempts += 1
+            if job.attempts < 3:
+                job.status = JobStatus.RETRYING
+            else:
+                job.status = JobStatus.FAILED
+            job.error_message = str(exc)
+            session.add(job)
+            session.commit()
+
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+    finally:
+        session.close()
+
+
+@app.task(bind=True, max_retries=2)
 def detect_intent_signals(self) -> dict:
     """
     Daily task: Detect intent signals for all prospects.
