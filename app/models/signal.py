@@ -14,9 +14,19 @@ from app.models.base import BaseModel
 class SignalType(str, enum.Enum):
     """Type of intent signal."""
 
+    # Gallery/Curator activity
     NEW_EXHIBITION = "NEW_EXHIBITION"
+    AFRICA_EXHIBITION = "AFRICA_EXHIBITION"  # NEW: Exhibition featuring African art
     CALL_FOR_ARTISTS = "CALL_FOR_ARTISTS"
     FAIR_PARTICIPATION = "FAIR_PARTICIPATION"
+    GALLERY_EXPANSION = "GALLERY_EXPANSION"  # NEW: Gallery expansion, new location, etc.
+
+    # Career/Hiring signals
+    CAREER_CHANGE = "CAREER_CHANGE"  # NEW: Title change, promotion, etc.
+    HIRING_CURATOR = "HIRING_CURATOR"  # NEW: Open position for curator/advisor
+    HIRING_SPREE = "HIRING_SPREE"  # NEW: Multiple hires in company
+
+    # Other signals
     PROGRAM_LAUNCH = "PROGRAM_LAUNCH"
     INTERNATIONAL_ACTIVITY = "INTERNATIONAL_ACTIVITY"
     NEW_PUBLICATION = "NEW_PUBLICATION"

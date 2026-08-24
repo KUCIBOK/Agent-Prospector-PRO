@@ -18,6 +18,7 @@ from app.models import (
     Job,
     JobStatus,
     Message,
+    Signal,
 )
 from app.schemas import JobResponse, JobsListResponse, MonitoringResponse
 
@@ -145,6 +146,41 @@ def system_info():
     }
 
 
+@router.get("/signals/recent")
+def recent_signals(
+    session: Session = Depends(get_session),
+    limit: int = Query(10, ge=1, le=100),
+    days: int = Query(7, ge=1, le=90),
+):
+    """Get recently detected intent signals."""
+    from datetime import timedelta
+
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    signals = session.exec(
+        select(Signal)
+        .where(Signal.signal_date >= cutoff)
+        .order_by(Signal.signal_date.desc())
+        .limit(limit)
+    ).all()
+
+    return {
+        "total": len(signals),
+        "signals": [
+            {
+                "id": s.id,
+                "prospect_id": s.prospect_id,
+                "signal_type": s.signal_type,
+                "description": s.description,
+                "source_url": s.source_url,
+                "signal_date": s.signal_date.isoformat(),
+                "importance": s.importance,
+                "confidence": s.confidence,
+            }
+            for s in signals
+        ],
+    }
+
+
 @router.get("/summary")
 def summary(session: Session = Depends(get_session)):
     """Get summary dashboard data."""
@@ -161,6 +197,13 @@ def summary(session: Session = Depends(get_session)):
     jobs_total = session.scalar(select(func.count()).select_from(Job))
     jobs_failed = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED))
 
+    # NEW: Count recent signals (last 7 days)
+    from datetime import timedelta
+    recent_cutoff = datetime.utcnow() - timedelta(days=7)
+    recent_signals = session.scalar(
+        select(func.count()).select_from(Signal).where(Signal.signal_date >= recent_cutoff)
+    )
+
     return {
         "prospects": {
             "total": prospects_total or 0,
@@ -175,6 +218,9 @@ def summary(session: Session = Depends(get_session)):
         "jobs": {
             "total": jobs_total or 0,
             "failed": jobs_failed or 0,
+        },
+        "signals": {
+            "recent": recent_signals or 0,  # NEW: signals in last 7 days
         },
         "uptime_seconds": int(time.time() - START_TIME),
     }

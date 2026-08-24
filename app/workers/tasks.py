@@ -29,6 +29,72 @@ def log_job_error(job_id: int, error_msg: str, stack_trace: str = None) -> None:
         session.close()
 
 
+@app.task(bind=True, max_retries=2)
+def detect_intent_signals(self) -> dict:
+    """
+    Daily task: Detect intent signals for all prospects.
+
+    Signals:
+    - LinkedIn changes (title, hires)
+    - Africa exhibitions
+    - New curator/advisor jobs
+    - Gallery expansion/relocation
+    """
+    session = SessionLocal()
+    job = None
+
+    try:
+        from app.services.intent_signals import IntentSignalDetector
+
+        # Create job record
+        job = Job(
+            job_type=JobType.INTENT_DETECTION,
+            status=JobStatus.RUNNING,
+            started_at=datetime.utcnow(),
+        )
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+
+        logger.info(f"🔍 Detecting intent signals (Job #{job.id})...")
+
+        detector = IntentSignalDetector(session)
+        signal_count = detector.detect_all_signals()
+
+        # Mark job as success
+        job.status = JobStatus.SUCCESS
+        job.completed_at = datetime.utcnow()
+        job.result_count = signal_count
+        session.add(job)
+        session.commit()
+
+        logger.info(f"✅ Intent detection complete: {signal_count} signals found")
+        return {
+            "job_id": job.id,
+            "status": "SUCCESS",
+            "signal_count": signal_count,
+        }
+
+    except Exception as exc:
+        logger.error(f"❌ Intent detection failed: {str(exc)}", exc_info=True)
+
+        if job:
+            job.attempts += 1
+            if job.attempts < 3:
+                job.status = JobStatus.RETRYING
+            else:
+                job.status = JobStatus.FAILED
+            job.error_message = str(exc)
+            session.add(job)
+            session.commit()
+
+        # Retry exponentially
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+    finally:
+        session.close()
+
+
 @app.task(bind=True, max_retries=3)
 def run_discovery(self) -> dict:
     """

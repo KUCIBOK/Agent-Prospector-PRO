@@ -213,3 +213,33 @@ def calculate_priority(
         return Priority.P3
     else:
         return Priority.P4
+
+
+def is_contact_ready(prospect: Prospect) -> bool:
+    """
+    Check if prospect meets minimum quality threshold for outreach.
+
+    Rules (QUALITY GATE #3):
+    - (Score >= 75 AND Confidence = HIGH) OR
+    - (Score >= 85 AND Confidence = MEDIUM)
+    - Must have email AND LinkedIn confirmed
+
+    Lower quality prospects → P3/P4 for nurturing, NOT P1/P2 outreach.
+
+    Returns:
+        True if ready to contact, False if should nurture instead
+    """
+    # Must-have: confirmed contact channels
+    if not prospect.email or not prospect.linkedin:
+        return False
+
+    # Rule 1: High confidence threshold is lower (75+)
+    if prospect.score >= 75 and prospect.confidence == ConfidenceLevel.HIGH:
+        return True
+
+    # Rule 2: Medium confidence requires higher score (85+)
+    if prospect.score >= 85 and prospect.confidence == ConfidenceLevel.MEDIUM:
+        return True
+
+    # Everything else: P3/P4 nurturing only, never P1/P2
+    return False

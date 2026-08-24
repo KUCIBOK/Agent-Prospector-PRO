@@ -5,7 +5,7 @@ Prospect routes — CRUD operations and discovery.
 from typing import Optional
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlmodel import select, func
 
@@ -17,6 +17,7 @@ from app.schemas import (
     ProspectResponse,
     ProspectsListResponse,
 )
+from app.services.deep_google_source import DeepGoogleSource
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/prospects", tags=["prospects"])
@@ -164,3 +165,87 @@ def stats_by_priority(session: Session = Depends(get_session)):
     ).all()
 
     return {"by_priority": {str(p): count for p, count in priorities if p}}
+
+
+@router.post("/deep-source")
+def deep_source_curators(
+    target_count: int = Query(50, ge=1, le=200),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    session: Session = Depends(get_session),
+):
+    """
+    🔥 Deep Source Hot Curator Prospects from Google
+
+    This endpoint:
+    1. Searches Google for independent curators
+    2. Extracts emails, websites, names
+    3. Creates hot prospects in database
+    4. Returns summary + list of created prospects
+
+    Query parameters:
+    - target_count: Number of prospects to find (default: 50, max: 200)
+
+    Response:
+    {
+        "created": 50,
+        "duplicates": 2,
+        "errors": 0,
+        "total": 52,
+        "prospects": [
+            {
+                "id": 1,
+                "name": "Marie Dubois",
+                "type": "CURATOR",
+                "email": "marie@galerie.fr",
+                "website": "https://galerie.fr",
+                "description": "African contemporary art curator"
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        logger.info(f"🔥 Starting deep source for {target_count} curator prospects...")
+
+        # Create deep source engine
+        source_engine = DeepGoogleSource(session)
+
+        # Run deep sourcing
+        results = source_engine.deep_source_curators(target_count=target_count)
+
+        # Convert prospects to response format
+        prospects_response = []
+        for prospect in results.get("prospects", []):
+            prospects_response.append({
+                "id": prospect.id,
+                "name": prospect.name,
+                "type": str(prospect.type),
+                "email": prospect.email,
+                "website": prospect.website,
+                "description": prospect.description,
+                "country": prospect.country,
+            })
+
+        response = {
+            "created": results["created"],
+            "duplicates": results["duplicates"],
+            "errors": results["errors"],
+            "total": results["total"],
+            "prospects": prospects_response,
+            "message": f"✅ Deep sourced {results['created']} hot curator prospects!",
+            "next_steps": [
+                "1. Prospects are now in database (Status: IDENTIFIED)",
+                "2. System will auto-enrich profiles (24h)",
+                "3. Auto-score prospects (SaaS Fit, Priority P1-P4)",
+                "4. Auto-send 'Sourcing & Vetting' emails to P1-P2",
+                "5. Follow-ups scheduled (days 3, 7, 14)"
+            ]
+        }
+
+        logger.info(f"✅ Deep source complete: {results['created']} created, {results['duplicates']} duplicates")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"❌ Deep sourcing failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Deep sourcing failed: {str(e)}")

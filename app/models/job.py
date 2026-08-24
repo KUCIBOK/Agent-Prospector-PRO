@@ -15,6 +15,7 @@ class JobType(str, enum.Enum):
     """Type of background job."""
 
     DISCOVERY = "DISCOVERY"
+    INTENT_DETECTION = "INTENT_DETECTION"  # NEW: Detect signals for existing prospects
     CRAWLING = "CRAWLING"
     ENRICHMENT = "ENRICHMENT"
     ANALYSIS = "ANALYSIS"
