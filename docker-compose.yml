@@ -35,22 +35,22 @@ services:
     networks:
       - kucibok
 
-  ai:
-    image: ollama/ollama:latest
-    container_name: kucibok-ollama
-    environment:
-      OLLAMA_HOST: ${OLLAMA_HOST:-0.0.0.0:11434}
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-    networks:
-      - kucibok
+  # ai:
+  #   image: ollama/ollama:latest
+  #   container_name: kucibok-ollama
+  #   environment:
+  #     OLLAMA_HOST: ${OLLAMA_HOST:-0.0.0.0:11434}
+  #   ports:
+  #     - "${OLLAMA_PORT:-11434}:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+  #     interval: 15s
+  #     timeout: 10s
+  #     retries: 3
+  #   networks:
+  #     - kucibok
 
   app:
     build:
@@ -72,8 +72,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ai:
-        condition: service_healthy
+      # ai:
+      #   condition: service_healthy
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs
@@ -95,7 +95,7 @@ services:
     depends_on:
       - database
       - redis
-      - ai
+      # - ai
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs
@@ -117,7 +117,7 @@ services:
     depends_on:
       - database
       - redis
-      - ai
+      # - ai
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs
