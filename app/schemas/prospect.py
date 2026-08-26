@@ -23,8 +23,8 @@ class ProspectCreate(BaseModel):
     name: str
     country: str
     city: Optional[str] = None
-    website: Optional[HttpUrl] = None
-    email: Optional[EmailStr] = None
+    website: Optional[str] = None  # Accepte string simple (pas validation stricte URL)
+    email: Optional[str] = None    # Accepte string simple (pas validation stricte Email)
     linkedin: Optional[str] = None
     instagram: Optional[str] = None
     description: Optional[str] = None
@@ -36,8 +36,8 @@ class ProspectUpdate(BaseModel):
 
     name: Optional[str] = None
     city: Optional[str] = None
-    website: Optional[HttpUrl] = None
-    email: Optional[EmailStr] = None
+    website: Optional[str] = None  # Match ProspectCreate - use plain string
+    email: Optional[str] = None    # Match ProspectCreate - use plain string
     linkedin: Optional[str] = None
     instagram: Optional[str] = None
     description: Optional[str] = None

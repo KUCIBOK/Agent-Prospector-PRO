@@ -109,10 +109,33 @@ async def root():
 # ============================================================================
 
 from app.api import prospects_router, messages_router, monitoring_router
+from fastapi.responses import FileResponse
+import os
 
 app.include_router(prospects_router, prefix="/api", tags=["prospects"])
 app.include_router(messages_router, prefix="/api", tags=["messages"])
 app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
+
+# Base directory for static files (extracted to avoid duplication)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+@app.get("/dashboard")
+async def serve_dashboard():
+    """Serve main dashboard"""
+    dashboard_path = os.path.join(BASE_DIR, "dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path, media_type="text/html")
+    logger.error(f"Dashboard not found at {dashboard_path}")
+    raise HTTPException(status_code=404, detail="Dashboard not found")
+
+@app.get("/dashboard-summary")
+async def serve_dashboard_summary():
+    """Serve dashboard summary"""
+    summary_path = os.path.join(BASE_DIR, "dashboard_summary.html")
+    if os.path.exists(summary_path):
+        return FileResponse(summary_path, media_type="text/html")
+    logger.error(f"Dashboard summary not found at {summary_path}")
+    raise HTTPException(status_code=404, detail="Dashboard summary not found")
 
 
 if __name__ == "__main__":

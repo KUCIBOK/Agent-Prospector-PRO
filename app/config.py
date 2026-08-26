@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # ========================================================================
     database_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://kucibok:changeme@localhost:5432/kucibok_prospector",
+        "postgresql+psycopg://kucibok:changeme@localhost:5432/kucibok_prospector",
     )
 
     # ========================================================================

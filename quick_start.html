@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kucibok Prospector - Quick Start</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 2.5em; color: #333; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; color: #666; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .step {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+        .step strong { color: #333; font-size: 1.1em; }
+        .step code {
+            display: block;
+            background: #333;
+            color: #00ff00;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .file-list {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .file-list li { margin: 8px 0; padding-left: 20px; }
+        .emoji { font-size: 1.2em; margin-right: 5px; }
+        footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Kucibok Prospector</h1>
+            <p>Guide de Démarrage Rapide - 5 Minutes</p>
+        </div>
+
+        <div class="card">
+            <h2>✅ Ce qui a été fait</h2>
+            <div class="step">
+                <strong>🚨 Problème Résolu:</strong>
+                <ul>
+                    <li>❌ Scheduler était désactivé → Pas de prospection</li>
+                    <li>❌ Pas de dashboard → Pas d'interface</li>
+                </ul>
+            </div>
+            <div class="step">
+                <strong>✅ Solution Fournie:</strong>
+                <ul>
+                    <li>✅ Dashboard interactif créé</li>
+                    <li>✅ Mode manuel configuré (vous lancez quand vous voulez!)</li>
+                    <li>✅ Guides complets rédigés</li>
+                    <li>✅ Script automatique préparé</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🚀 Démarrer en 3 Étapes (5 minutes)</h2>
+
+            <div class="step">
+                <strong>ÉTAPE 1: Terminal 1 (PowerShell) - API</strong>
+                <code>cd "C:\Users\Moctar Sidibe\Desktop\Collection art primitif Tomasini\Sculpture\prospecto VA"
+python -m uvicorn app.main:app --reload --port 8000</code>
+                <p>✅ Attendre: <code style="display: inline;">✅ Uvicorn running on http://127.0.0.1:8000</code></p>
+            </div>
+
+            <div class="step">
+                <strong>ÉTAPE 2: Terminal 2 (PowerShell Nouveau) - Worker</strong>
+                <code>cd "C:\Users\Moctar Sidibe\Desktop\Collection art primitif Tomasini\Sculpture\prospecto VA"
+celery -A app.workers.tasks worker --loglevel=info</code>
+                <p>✅ Attendre: <code style="display: inline;">celery@YOUR-MACHINE ready to accept tasks</code></p>
+            </div>
+
+            <div class="step">
+                <strong>ÉTAPE 3: Navigateur - Dashboard</strong>
+                <a href="http://localhost:8000/dashboard.html" class="btn">Ouvrir Dashboard</a>
+                <p>Ou: <code style="display: inline;">http://localhost:8000/dashboard.html</code></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎁 BONUS: Script Automatique (Recommandé!)</h2>
+            <div class="step">
+                <strong>Lancer tout d'un coup avec 1 commande:</strong>
+                <code>.\START_ALL.ps1</code>
+                <p>✅ Démarre API + Worker + Dashboard automatiquement!</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔥 Utiliser (3 Clicks)</h2>
+            <div class="step">
+                <strong>1. Cliquez "🔥 Deep Source Curators"</strong>
+                <p>→ Scrape Google pour trouver 50 curateurs</p>
+            </div>
+            <div class="step">
+                <strong>2. Attendez 30-60 secondes</strong>
+                <p>→ Le système cherche et importe les prospects</p>
+            </div>
+            <div class="step">
+                <strong>3. VOYEZ 50 prospects trouvés! 🎉</strong>
+                <p>→ Dashboard affiche les résultats en temps réel</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📚 Fichiers à Consulter</h2>
+            <ul class="file-list">
+                <li><strong>LIRE_MOI_D_ABORD.md</strong> - Résumé en 5 min (★ START HERE)</li>
+                <li><strong>QUICK_START_MANUAL.md</strong> - Guide détaillé avec toutes les commandes</li>
+                <li><strong>DASHBOARD_GUIDE.md</strong> - Comment utiliser le dashboard</li>
+                <li><strong>RESUME_SOLUTION.md</strong> - Architecture et diagrammes</li>
+                <li><strong>dashboard.html</strong> - Interface interactive (http://localhost:8000/dashboard.html)</li>
+                <li><strong>START_ALL.ps1</strong> - Script PowerShell (lancer tout d'un coup)</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>📊 Statistiques en Temps Réel</h2>
+            <p>Le dashboard affiche automatiquement (mis à jour toutes les 10 secondes):</p>
+            <div class="step">
+                <strong>📊 PROSPECTS</strong>
+                <p>Total | Artistes | Clients | P1 (Hot) | P2</p>
+            </div>
+            <div class="step">
+                <strong>✉️ MESSAGES</strong>
+                <p>Total | Brouillons | Envoyés | Répondus | Meetings</p>
+            </div>
+            <div class="step">
+                <strong>⚙️ SYSTÈME</strong>
+                <p>Uptime | Jobs | Erreurs | Signaux Récents</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Prochaines Étapes</h2>
+            <ol>
+                <li>Lancez le système (3 étapes ou 1 commande)</li>
+                <li>Ouvrez http://localhost:8000/dashboard.html</li>
+                <li>Cliquez "🔥 Deep Source Curators"</li>
+                <li>Attendez 30-60 secondes</li>
+                <li>VOYEZ 50 prospects! 🎉</li>
+                <li>Continuez avec Instagram/LinkedIn/Rescore</li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h2>🆘 Problèmes Rapides</h2>
+            <div class="step">
+                <strong>Port 8000 déjà utilisé?</strong>
+                <code>netstat -ano | findstr :8000
+taskkill /PID &lt;PID&gt; /F</code>
+            </div>
+            <div class="step">
+                <strong>Redis pas connecté?</strong>
+                <code>redis-cli ping</code>
+                <p>Si pas PONG: <code style="display: inline;">choco install redis</code></p>
+            </div>
+            <div class="step">
+                <strong>API ne répond pas?</strong>
+                <code>http://localhost:8000/health</code>
+                <p>Doit afficher: <code style="display: inline;">{"status": "ok"}</code></p>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h2 style="color: white; border: none;">🚀 Vous êtes Prêt!</h2>
+            <p style="font-size: 1.1em; margin-bottom: 20px;">Lancez le système et commencez la prospection!</p>
+            <a href="http://localhost:8000/dashboard.html" class="btn" style="background: white; color: #667eea; font-size: 1.1em;">Aller au Dashboard →</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>✅ Système complet et prêt | Prospection manuelle | Contrôle total | Interface interactive</p>
+    </footer>
+</body>
+</html>

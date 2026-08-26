@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Kucibok Prospector - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .stat-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-card p {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .prospects-list {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+        }
+
+        .prospects-list h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .prospect-item {
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 10px 0;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .prospect-item strong {
+            color: #333;
+        }
+
+        .prospect-item small {
+            color: #999;
+        }
+
+        .error-log {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+        }
+
+        .error-log h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .error-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .highlight {
+            background: #fff59d;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Kucibok Prospector</h1>
+            <p>Plateforme autonome de prospection - Contrôle Manuel</p>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <div class="dashboard">
+            <div class="card">
+                <h2>📊 Prospects</h2>
+                <div class="stat">
+                    <span class="stat-label">Total</span>
+                    <span class="stat-value" id="total-prospects">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">🎨 Artistes</span>
+                    <span class="stat-value" id="artists-count">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">🎯 Clients</span>
+                    <span class="stat-value" id="clients-count">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">P1 (Hot)</span>
+                    <span class="stat-value" id="p1-count">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">P2</span>
+                    <span class="stat-value" id="p2-count">0</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>✉️ Messages</h2>
+                <div class="stat">
+                    <span class="stat-label">Total</span>
+                    <span class="stat-value" id="messages-total">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">📝 Brouillons</span>
+                    <span class="stat-value" id="messages-draft">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">✅ Envoyés</span>
+                    <span class="stat-value" id="messages-sent">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">💬 Répondus</span>
+                    <span class="stat-value" id="messages-replied">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">📅 Meetings</span>
+                    <span class="stat-value" id="messages-meeting">0</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚙️ Système</h2>
+                <div class="stat">
+                    <span class="stat-label">Uptime</span>
+                    <span class="stat-value" id="uptime">-</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Jobs Total</span>
+                    <span class="stat-value" id="jobs-total">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">❌ Erreurs</span>
+                    <span class="stat-value" id="jobs-failed">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">🔔 Signaux Récents</span>
+                    <span class="stat-value" id="signals-recent">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <div class="action-card">
+                <h3>🔥 Deep Source Curators</h3>
+                <p>Scrape Google pour trouver <strong>50 curateurs indépendants</strong> correspondant à votre profil d'artiste africain contemporain.</p>
+                <div class="input-group">
+                    <input type="number" id="deep-source-count" value="50" min="1" max="200">
+                    <button class="btn-primary" onclick="deepSourceCurators()">Lancer</button>
+                </div>
+                <div class="loading" id="deep-source-loading">
+                    <div class="spinner"></div>
+                    <p>Scraping en cours...</p>
+                </div>
+                <div class="status" id="deep-source-status" style="display:none;"></div>
+            </div>
+
+            <div class="action-card">
+                <h3>🎨 Instagram Analysis</h3>
+                <p>Analyser les artistes trouvés et détecter les <strong>signaux d'intention</strong> sur Instagram (posts, hashtags, engagement).</p>
+                <button class="btn-primary" onclick="triggerInstagramAnalysis()">Analyser</button>
+                <div class="loading" id="instagram-loading">
+                    <div class="spinner"></div>
+                    <p>Analyse en cours...</p>
+                </div>
+                <div class="status" id="instagram-status" style="display:none;"></div>
+            </div>
+
+            <div class="action-card">
+                <h3>💼 LinkedIn Monitoring</h3>
+                <p>Monitorer les curateurs sur LinkedIn pour détecter les changements de galerie, lancements d'expériences, etc.</p>
+                <button class="btn-primary" onclick="triggerLinkedInMonitoring()">Monitorer</button>
+                <div class="loading" id="linkedin-loading">
+                    <div class="spinner"></div>
+                    <p>Monitoring en cours...</p>
+                </div>
+                <div class="status" id="linkedin-status" style="display:none;"></div>
+            </div>
+
+            <div class="action-card">
+                <h3>⭐ Rescore Artists</h3>
+                <p>Recalculer les scores des artistes avec l'algorithme <strong>Advanced Artist Scoring</strong> (Fair + Gallery + Awards).</p>
+                <button class="btn-primary" onclick="triggerArtistRescoring()">Rescorer</button>
+                <div class="loading" id="rescore-loading">
+                    <div class="spinner"></div>
+                    <p>Rescoring en cours...</p>
+                </div>
+                <div class="status" id="rescore-status" style="display:none;"></div>
+            </div>
+
+            <div class="action-card">
+                <h3>🔄 Rafraîchir</h3>
+                <p>Actualiser les statistiques du dashboard en temps réel.</p>
+                <button class="btn-secondary" onclick="refreshDashboard()">Rafraîchir</button>
+            </div>
+
+            <div class="action-card">
+                <h3>📡 Health Check</h3>
+                <p>Vérifier l'état de l'API et de la base de données.</p>
+                <button class="btn-secondary" onclick="healthCheck()">Vérifier</button>
+                <div class="status" id="health-status" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- Recent Prospects -->
+        <div class="prospects-list">
+            <h2>📋 Derniers Prospects Trouvés (Top 10)</h2>
+            <div id="prospects-container">
+                <p style="color: #999; text-align: center;">Chargement...</p>
+            </div>
+        </div>
+
+        <!-- Error Log -->
+        <div class="error-log" id="error-log-container" style="display:none;">
+            <h2>⚠️ Journal d'Erreurs</h2>
+            <div id="error-log-content"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Kucibok Prospector v1.1.0 | Prospection autonome pour artistes africains et curateurs internationaux</p>
+    </footer>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        const errors = [];
+
+        // Helper function to format uptime
+        function formatUptime(seconds) {
+            if (!seconds) return '-';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Helper function to show error
+        function showError(title, message) {
+            errors.push({ title, message, time: new Date().toLocaleTimeString() });
+            const errorLog = document.getElementById('error-log-container');
+            const content = document.getElementById('error-log-content');
+            errorLog.style.display = 'block';
+
+            const errorItem = document.createElement('div');
+            errorItem.className = 'error-item';
+            errorItem.innerHTML = `<strong>${title}</strong><br><small>${message}</small><br><em>${errors[errors.length-1].time}</em>`;
+            content.appendChild(errorItem);
+        }
+
+        // Refresh dashboard data
+        async function refreshDashboard() {
+            try {
+                // Get summary data
+                const summary = await fetch(`${API_BASE}/monitoring/summary`).then(r => r.json());
+
+                document.getElementById('total-prospects').textContent = summary.prospects.total;
+                document.getElementById('artists-count').textContent = summary.prospects.artists;
+                document.getElementById('clients-count').textContent = summary.prospects.clients;
+
+                document.getElementById('messages-total').textContent = summary.messages.total;
+                document.getElementById('messages-draft').textContent = summary.messages.draft;
+                document.getElementById('messages-sent').textContent = summary.messages.sent;
+
+                document.getElementById('jobs-total').textContent = summary.jobs.total;
+                document.getElementById('jobs-failed').textContent = summary.jobs.failed;
+                document.getElementById('uptime').textContent = formatUptime(summary.uptime_seconds);
+                document.getElementById('signals-recent').textContent = summary.signals.recent;
+
+                // Get detailed prospect stats
+                const stats = await fetch(`${API_BASE}/monitoring/prospects/stats`).then(r => r.json());
+                document.getElementById('p1-count').textContent = stats.by_priority.P1 || 0;
+                document.getElementById('p2-count').textContent = stats.by_priority.P2 || 0;
+
+                // Get message stats
+                const msgStats = await fetch(`${API_BASE}/monitoring/messages/stats`).then(r => r.json());
+                document.getElementById('messages-replied').textContent = msgStats.by_outcome.replied;
+                document.getElementById('messages-meeting').textContent = msgStats.by_outcome.meeting;
+
+                // Get recent prospects
+                const prospects = await fetch(`${API_BASE}/prospects?page=1&page_size=10`).then(r => r.json());
+                const container = document.getElementById('prospects-container');
+
+                if (prospects.items && prospects.items.length > 0) {
+                    container.innerHTML = prospects.items.map(p => `
+                        <div class="prospect-item">
+                            <strong>${p.name || 'N/A'}</strong>
+                            <small>(${p.type})</small>
+                            ${p.email ? `<br>📧 ${p.email}` : ''}
+                            ${p.website ? `<br>🌐 ${p.website}` : ''}
+                            ${p.priority ? `<br>⚡ Priority: <span class="highlight">${p.priority}</span>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #999; text-align: center;">Aucun prospect trouvé. Lancez Deep Source!</p>';
+                }
+
+            } catch (error) {
+                showError('Dashboard Refresh Error', error.message);
+                console.error(error);
+            }
+        }
+
+        // Deep source curators
+        async function deepSourceCurators() {
+            const count = document.getElementById('deep-source-count').value || 50;
+            const loading = document.getElementById('deep-source-loading');
+            const status = document.getElementById('deep-source-status');
+
+            loading.classList.add('active');
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/prospects/deep-source?target_count=${count}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.className = 'status success';
+                    status.innerHTML = `
+                        ✅ <strong>${data.created}</strong> prospects trouvés!<br>
+                        ${data.duplicates > 0 ? `⚠️ ${data.duplicates} doublons supprimés<br>` : ''}
+                        Prochaines étapes:<br>
+                        ${data.next_steps.map(s => `• ${s}`).join('<br>')}
+                    `;
+                    await new Promise(r => setTimeout(r, 2000));
+                    await refreshDashboard();
+                } else {
+                    throw new Error(data.detail || 'Deep source failed');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = `❌ Erreur: ${error.message}`;
+                showError('Deep Source Error', error.message);
+            } finally {
+                loading.classList.remove('active');
+                status.style.display = 'block';
+            }
+        }
+
+        // Trigger Instagram analysis
+        async function triggerInstagramAnalysis() {
+            const loading = document.getElementById('instagram-loading');
+            const status = document.getElementById('instagram-status');
+
+            loading.classList.add('active');
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/monitoring/jobs/analyze-instagram`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.className = 'status success';
+                    status.innerHTML = `✅ Job queued: ${data.task_id}`;
+                } else {
+                    throw new Error(data.detail || 'Instagram analysis failed');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = `❌ Erreur: ${error.message}`;
+                showError('Instagram Analysis Error', error.message);
+            } finally {
+                loading.classList.remove('active');
+                status.style.display = 'block';
+            }
+        }
+
+        // Trigger LinkedIn monitoring
+        async function triggerLinkedInMonitoring() {
+            const loading = document.getElementById('linkedin-loading');
+            const status = document.getElementById('linkedin-status');
+
+            loading.classList.add('active');
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/monitoring/jobs/monitor-linkedin`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.className = 'status success';
+                    status.innerHTML = `✅ Job queued: ${data.task_id}`;
+                } else {
+                    throw new Error(data.detail || 'LinkedIn monitoring failed');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = `❌ Erreur: ${error.message}`;
+                showError('LinkedIn Monitoring Error', error.message);
+            } finally {
+                loading.classList.remove('active');
+                status.style.display = 'block';
+            }
+        }
+
+        // Trigger artist rescoring
+        async function triggerArtistRescoring() {
+            const loading = document.getElementById('rescore-loading');
+            const status = document.getElementById('rescore-status');
+
+            loading.classList.add('active');
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/monitoring/jobs/rescore-artists-advanced`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.className = 'status success';
+                    status.innerHTML = `✅ Job queued: ${data.task_id}`;
+                } else {
+                    throw new Error(data.detail || 'Artist rescoring failed');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = `❌ Erreur: ${error.message}`;
+                showError('Artist Rescoring Error', error.message);
+            } finally {
+                loading.classList.remove('active');
+                status.style.display = 'block';
+            }
+        }
+
+        // Health check
+        async function healthCheck() {
+            const status = document.getElementById('health-status');
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.className = 'status success';
+                    status.innerHTML = `✅ API OK | Version: ${data.version}`;
+                } else {
+                    throw new Error('API not healthy');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = `❌ API Error: ${error.message}`;
+            }
+            status.style.display = 'block';
+        }
+
+        // Initial load
+        window.addEventListener('load', () => {
+            refreshDashboard();
+            setInterval(refreshDashboard, 10000); // Auto-refresh every 10 seconds
+        });
+    </script>
+</body>
+</html>

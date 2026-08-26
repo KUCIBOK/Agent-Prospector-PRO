@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-08-26T02:09:06.149667+00:00",
+  "batch": 2,
+  "total_sent": 10,
+  "prospects": [
+    {
+      "name": "Paul Dubois",
+      "email": "paul.dubois@galerieart.paris",
+      "score": 81.8
+    },
+    {
+      "name": "Chantal Leclerc",
+      "email": "chantal.leclerc@galerieparis.fr",
+      "score": 81.5
+    },
+    {
+      "name": "Paul Garcia",
+      "email": "paul.garcia@artadvice.fr",
+      "score": 80.1
+    },
+    {
+      "name": "Thug Moc",
+      "email": "thugmoc@gmail.com",
+      "score": 80.0
+    },
+    {
+      "name": "Alain Fontaine",
+      "email": "alain.fontaine@galleryspace.paris",
+      "score": 79.9
+    },
+    {
+      "name": "Laurent Morel",
+      "email": "laurent.morel@modernart.fr",
+      "score": 79.1
+    },
+    {
+      "name": "Delphine Fontaine",
+      "email": "delphine.fontaine@galleryspace.paris",
+      "score": 78.6
+    },
+    {
+      "name": "Isabelle Lefebvre",
+      "email": "isabelle.lefebvre@artcenter.fr",
+      "score": 78.1
+    },
+    {
+      "name": "Laurent Morel",
+      "email": "laurent.morel@galerieart.paris",
+      "score": 77.8
+    },
+    {
+      "name": "Valérie Fontaine",
+      "email": "valérie.fontaine@galeriemoderne.fr",
+      "score": 77.5
+    }
+  ]
+}

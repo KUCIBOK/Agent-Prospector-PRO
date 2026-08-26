@@ -1,0 +1,93 @@
+{
+  "batch": 3,
+  "scheduled_send_time": "2026-08-27 11:00:00",
+  "prospects_count": 10,
+  "prospects": [
+    {
+      "rank": 16,
+      "name": "Laurent Morel",
+      "email": "laurent.morel@modernart.fr",
+      "score": 79.1,
+      "city": "Belleville",
+      "specialty": "Abstract Art"
+    },
+    {
+      "rank": 17,
+      "name": "Delphine Fontaine",
+      "email": "delphine.fontaine@galleryspace.paris",
+      "score": 78.6,
+      "city": "Paris",
+      "specialty": "Figurative Art"
+    },
+    {
+      "rank": 18,
+      "name": "Isabelle Lefebvre",
+      "email": "isabelle.lefebvre@artcenter.fr",
+      "score": 78.1,
+      "city": "Left Bank",
+      "specialty": "Abstract Art"
+    },
+    {
+      "rank": 19,
+      "name": "Laurent Morel",
+      "email": "laurent.morel@galerieart.paris",
+      "score": 77.8,
+      "city": "Marais",
+      "specialty": "Modern Art"
+    },
+    {
+      "rank": 20,
+      "name": "Valérie Fontaine",
+      "email": "valérie.fontaine@galeriemoderne.fr",
+      "score": 77.5,
+      "city": "Champs-Élysées",
+      "specialty": "Installation Art"
+    },
+    {
+      "rank": 21,
+      "name": "Bernard Dubois",
+      "email": "bernard.dubois@contemporaryart.paris",
+      "score": 77.5,
+      "city": "Left Bank",
+      "specialty": "Sculpture"
+    },
+    {
+      "rank": 22,
+      "name": "Florence Lefebvre",
+      "email": "florence.lefebvre@galerieparis.fr",
+      "score": 77.1,
+      "city": "Saint-Honoré",
+      "specialty": "Installation Art"
+    },
+    {
+      "rank": 23,
+      "name": "François Morel",
+      "email": "françois.morel@artgallery.fr",
+      "score": 77.1,
+      "city": "Belleville",
+      "specialty": "Figurative Art"
+    },
+    {
+      "rank": 24,
+      "name": "André Gérard",
+      "email": "andré.gérard@artgallery.fr",
+      "score": 76.4,
+      "city": "Champs-Élysées",
+      "specialty": "Abstract Art"
+    },
+    {
+      "rank": 25,
+      "name": "Delphine Blanc",
+      "email": "delphine.blanc@artadvice.fr",
+      "score": 76.4,
+      "city": "Belleville",
+      "specialty": "Photography"
+    }
+  ],
+  "template": "Subject: {prospect_name} — Exclusive African Artist Partnership\n\nDear {prospect_name},\n\nQuick note: I've been following your gallery's curation in {city}, particularly your interest in {specialty}.\n\nI represent a growing network of emerging African contemporary artists. What makes this different:\n\n📍 Direct artist access (no middlemen)\n🎨 Exclusive first pick on new works\n🤝 Full partnership flexibility — long-term or project-based\n💼 Complete logistics & documentation handled\n\nWe've facilitated works for galleries similar to yours. I think there's a genuine fit here.\n\nAre you open to a brief conversation this week? No pressure — just exploring.\n\nBest,\nKucibok Team\nkucibok.com",
+  "success_criteria": {
+    "opens_target": "3-4 (30-40%)",
+    "clicks_target": "0-1 (5-8%)",
+    "replies_target": "0-1 (0-20%)"
+  }
+}

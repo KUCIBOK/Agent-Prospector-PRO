@@ -63,11 +63,16 @@ def list_prospects(
         )
 
     # Count total
-    total = session.scalar(select(func.count()).select_from(Prospect).where(query.whereclause))
+    if query.whereclause is not None:
+        count_query = select(func.count()).select_from(Prospect).where(query.whereclause)
+    else:
+        count_query = select(func.count()).select_from(Prospect)
+    total = session.execute(count_query).scalar() or 0
 
     # Paginate
     offset = (page - 1) * page_size
-    prospects = session.exec(query.offset(offset).limit(page_size)).all()
+    result = session.execute(query.offset(offset).limit(page_size))
+    prospects = result.scalars().all()
 
     return ProspectsListResponse(
         total=total,
@@ -92,23 +97,31 @@ def create_prospect(
     session: Session = Depends(get_session),
 ) -> ProspectResponse:
     """Create a new prospect."""
-    # Check for duplicates
-    existing = session.exec(
-        select(Prospect).where(
-            (Prospect.email == prospect_in.email) if prospect_in.email else False
-        )
-    ).first()
+    try:
+        # Check for duplicates by email
+        if prospect_in.email:
+            existing = session.exec(
+                select(Prospect).where(Prospect.email == prospect_in.email)
+            ).first()
+            if existing:
+                raise HTTPException(status_code=409, detail="Prospect with this email already exists")
 
-    if existing:
-        raise HTTPException(status_code=409, detail="Prospect with this email already exists")
+        # Create prospect
+        prospect = Prospect(**prospect_in.model_dump())
+        session.add(prospect)
+        session.commit()
+        session.refresh(prospect)
 
-    prospect = Prospect(**prospect_in.model_dump())
-    session.add(prospect)
-    session.commit()
-    session.refresh(prospect)
+        logger.info(f"✅ Created prospect: {prospect.name} ({prospect.id})")
+        return ProspectResponse.model_validate(prospect)
 
-    logger.info(f"✅ Created prospect: {prospect.name} ({prospect.id})")
-    return ProspectResponse.model_validate(prospect)
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error creating prospect: {str(e)}", exc_info=True)
+        # Server errors (DB, validation) should return 500, not 400
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @router.patch("/{prospect_id}", response_model=ProspectResponse)

@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-08-26T02:09:41.109240+00:00",
+  "batch_stats": {
+    "batch_1_sent": 5,
+    "batch_1_opened": 3,
+    "batch_1_clicked": 1,
+    "batch_1_replied": 1,
+    "batch_2_sent": 10,
+    "batch_3_pending": 10,
+    "p2_pending": 51,
+    "total_p1": 25,
+    "total_p2": 51,
+    "total_all": 76
+  },
+  "active_conversations": [
+    {
+      "prospect": "Martine Michel",
+      "email": "martine.michel@artgallery.fr",
+      "score": 86.2,
+      "status": "REPLIED",
+      "action": "URGENT - Reply within 1 hour"
+    }
+  ]
+}
