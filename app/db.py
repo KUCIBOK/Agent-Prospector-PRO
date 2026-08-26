@@ -6,8 +6,8 @@ import logging
 from typing import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlmodel import SQLModel
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel, Session
 
 from app.config import settings
 
