@@ -120,9 +120,9 @@ def create_prospect(
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        logger.error(f"❌ Error creating prospect: {e!s}", exc_info=True)
+        logger.exception("❌ Error creating prospect")
         # Server errors (DB, validation) should return 500, not 400
-        raise HTTPException(status_code=500, detail=f"Internal server error: {e!s}") from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.patch("/{prospect_id}", response_model=ProspectResponse)
@@ -265,5 +265,5 @@ def deep_source_curators(
         return response
 
     except Exception as e:
-        logger.error(f"❌ Deep sourcing failed: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Deep sourcing failed: {e!s}") from e
+        logger.exception("❌ Deep sourcing failed")
+        raise HTTPException(status_code=500, detail="Deep sourcing failed") from e
