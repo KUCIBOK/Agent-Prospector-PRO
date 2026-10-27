@@ -95,3 +95,8 @@ warn_unused_configs = true
 ignore_missing_imports = true
 # mypy passes with untyped defs allowed; turn this on once annotations are complete.
 disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+# Only tests/ is the test suite; the test_*.py scripts at the repository root are
+# manual demo scripts that need a running server.
+testpaths = ["tests"]
