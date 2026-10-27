@@ -3,19 +3,17 @@ Message routes — outreach queue and manual tracking.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlmodel import select, func
+from sqlmodel import Session, col, func, select
 
 from app.db import get_session
-from app.models import Message, MessageStatus, MessageOutcome, Priority, Prospect
+from app.models import Message, MessageOutcome, MessageStatus, Prospect
 from app.schemas import (
     MessageCreate,
-    MessageUpdate,
     MessageResponse,
     MessagesQueueResponse,
+    MessageUpdate,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,9 +23,9 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 @router.get("", response_model=MessagesQueueResponse)
 def list_messages(
     session: Session = Depends(get_session),
-    status: Optional[MessageStatus] = None,
-    outcome: Optional[MessageOutcome] = None,
-    persona: Optional[str] = None,
+    status: MessageStatus | None = None,
+    outcome: MessageOutcome | None = None,
+    persona: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ) -> MessagesQueueResponse:
@@ -51,12 +49,10 @@ def list_messages(
         query = query.where(Message.persona == persona)
 
     # Sort by prospect priority (P1 first)
-    query = query.order_by(Prospect.priority.asc()).order_by(Message.generated_at.desc())
+    query = query.order_by(col(Prospect.priority).asc()).order_by(col(Message.generated_at).desc())
 
     # Count
-    total = session.scalar(
-        select(func.count()).select_from(Message).where(query.whereclause)
-    )
+    total = session.exec(select(func.count()).select_from(query.subquery())).one()
 
     # Status counts
     pending = session.scalar(
@@ -130,7 +126,9 @@ def update_message(
     session.commit()
     session.refresh(message)
 
-    logger.info(f"✅ Updated message {message_id}: status={message.status}, outcome={message.outcome}")
+    logger.info(
+        f"✅ Updated message {message_id}: status={message.status}, outcome={message.outcome}"
+    )
     return MessageResponse.model_validate(message)
 
 
@@ -154,7 +152,7 @@ def get_draft_queue(session: Session = Depends(get_session)):
         select(Message, Prospect)
         .join(Prospect)
         .where(Message.status == MessageStatus.DRAFT)
-        .order_by(Prospect.priority.asc())
+        .order_by(col(Prospect.priority).asc())
     )
 
     results = session.exec(query).all()

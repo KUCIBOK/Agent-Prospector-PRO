@@ -3,15 +3,14 @@ Prospect schemas for request/response validation.
 """
 
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, EmailStr, HttpUrl
+from pydantic import BaseModel
 
 from app.models import (
-    ProspectType,
-    ProspectStatus,
-    Priority,
     ConfidenceLevel,
+    Priority,
+    ProspectStatus,
+    ProspectType,
     RecommendedAngle,
 )
 
@@ -22,35 +21,35 @@ class ProspectCreate(BaseModel):
     type: ProspectType
     name: str
     country: str
-    city: Optional[str] = None
-    website: Optional[str] = None  # Accepte string simple (pas validation stricte URL)
-    email: Optional[str] = None    # Accepte string simple (pas validation stricte Email)
-    linkedin: Optional[str] = None
-    instagram: Optional[str] = None
-    description: Optional[str] = None
-    specialty: Optional[str] = None
+    city: str | None = None
+    website: str | None = None  # Accepte string simple (pas validation stricte URL)
+    email: str | None = None  # Accepte string simple (pas validation stricte Email)
+    linkedin: str | None = None
+    instagram: str | None = None
+    description: str | None = None
+    specialty: str | None = None
 
 
 class ProspectUpdate(BaseModel):
     """Update prospect request."""
 
-    name: Optional[str] = None
-    city: Optional[str] = None
-    website: Optional[str] = None  # Match ProspectCreate - use plain string
-    email: Optional[str] = None    # Match ProspectCreate - use plain string
-    linkedin: Optional[str] = None
-    instagram: Optional[str] = None
-    description: Optional[str] = None
-    specialty: Optional[str] = None
-    africa_interest: Optional[str] = None
-    international_activity: Optional[str] = None
-    digital_maturity: Optional[str] = None
-    status: Optional[ProspectStatus] = None
-    score: Optional[float] = None
-    confidence: Optional[ConfidenceLevel] = None
-    priority: Optional[Priority] = None
-    recommended_angle: Optional[RecommendedAngle] = None
-    reason_to_contact: Optional[str] = None
+    name: str | None = None
+    city: str | None = None
+    website: str | None = None  # Match ProspectCreate - use plain string
+    email: str | None = None  # Match ProspectCreate - use plain string
+    linkedin: str | None = None
+    instagram: str | None = None
+    description: str | None = None
+    specialty: str | None = None
+    africa_interest: str | None = None
+    international_activity: str | None = None
+    digital_maturity: str | None = None
+    status: ProspectStatus | None = None
+    score: float | None = None
+    confidence: ConfidenceLevel | None = None
+    priority: Priority | None = None
+    recommended_angle: RecommendedAngle | None = None
+    reason_to_contact: str | None = None
 
 
 class ProspectResponse(BaseModel):
@@ -60,23 +59,23 @@ class ProspectResponse(BaseModel):
     type: ProspectType
     name: str
     country: str
-    city: Optional[str]
-    website: Optional[str]
-    email: Optional[str]
-    linkedin: Optional[str]
-    instagram: Optional[str]
-    description: Optional[str]
-    specialty: Optional[str]
-    africa_interest: Optional[str]
-    international_activity: Optional[str]
-    digital_maturity: Optional[str]
+    city: str | None
+    website: str | None
+    email: str | None
+    linkedin: str | None
+    instagram: str | None
+    description: str | None
+    specialty: str | None
+    africa_interest: str | None
+    international_activity: str | None
+    digital_maturity: str | None
     status: ProspectStatus
     score: float
     confidence: ConfidenceLevel
-    priority: Optional[Priority]
-    recommended_angle: Optional[RecommendedAngle]
-    reason_to_contact: Optional[str]
-    last_verified_at: Optional[datetime]
+    priority: Priority | None
+    recommended_angle: RecommendedAngle | None
+    reason_to_contact: str | None
+    last_verified_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

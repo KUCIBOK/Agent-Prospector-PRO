@@ -1,10 +1,9 @@
 """Tests for prospects API."""
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.models import Prospect, ProspectType, ProspectStatus
+from app.models import Prospect, ProspectType
 
 
 def test_create_prospect(client: TestClient):
@@ -100,3 +99,19 @@ def test_filter_prospects_by_type(client: TestClient, session: Session):
     assert response.status_code == 200
     data = response.json()
     assert all(p["type"] == "ARTIST" for p in data["items"])
+
+
+def test_server_errors_do_not_leak_details(client: TestClient, session: Session, monkeypatch):
+    """A failing commit must return a generic 500, not the exception text."""
+
+    def boom():
+        raise RuntimeError("postgresql://user:s3cret@db/internal")
+
+    monkeypatch.setattr(session, "commit", boom)
+    response = client.post(
+        "/api/prospects",
+        json={"type": "ARTIST", "name": "Leak Test", "country": "SN"},
+    )
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Internal server error"
+    assert "s3cret" not in response.text

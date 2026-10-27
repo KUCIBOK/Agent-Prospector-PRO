@@ -2,10 +2,10 @@
 AI analysis model — stores raw LLM analysis results.
 """
 
-from typing import Optional, Any
+from typing import Any
 
-from sqlmodel import Field
 from sqlalchemy import JSON
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -27,7 +27,7 @@ class AIAnalysis(BaseModel, table=True):
         model_version: Which model computed this
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prospect_id: int = Field(foreign_key="prospect.id", index=True)
     analysis_type: str = Field(index=True)  # artist_fit, saas_fit, intent_signals
     raw_output: Any = Field(sa_type=JSON)

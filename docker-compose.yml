@@ -1,0 +1,63 @@
+# Only the API and the dashboard are published, and only on localhost.
+# Put a reverse proxy (Nginx/Caddy) with HTTPS in front for any remote access.
+# Postgres, Redis and Ollama stay on the internal network: they have no
+# authentication of their own by default.
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@database:5432/${DB_NAME}
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/0
+    CELERY_RESULT_BACKEND: redis://redis:6379/1
+    OLLAMA_HOST: http://ai:11434
+  depends_on:
+    database:
+      condition: service_healthy
+    redis:
+      condition: service_started
+
+services:
+  app:
+    <<: *app
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    <<: *app
+    command: celery -A app.workers.celery_app worker --loglevel=info
+
+  scheduler:
+    <<: *app
+    command: python -m app.scheduler.main
+
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:?set DB_USER in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:?set DB_NAME in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+
+  ai:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  pgdata:
+  ollama:

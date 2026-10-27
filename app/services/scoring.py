@@ -8,8 +8,7 @@ Based on LOGIC.md:
 - Priority Score (P1–P4)
 """
 
-from typing import Optional
-from app.models import Prospect, Priority, ConfidenceLevel
+from app.models import ConfidenceLevel, Priority, Prospect
 
 
 def calculate_artist_fit_score(prospect: Prospect) -> tuple[float, dict]:

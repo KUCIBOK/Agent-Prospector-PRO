@@ -1,6 +1,5 @@
 """Tests for crawler service."""
 
-import pytest
 from app.services.crawler import Crawler, CrawlResult
 
 
@@ -13,6 +12,7 @@ def test_crawler_rate_limiting():
 
     # Second request should be delayed
     import time
+
     start = time.time()
     crawler._rate_limit("example.com")
     elapsed = time.time() - start

@@ -3,11 +3,11 @@ Database connection and session management.
 """
 
 import logging
-from typing import Generator
+from collections.abc import AsyncGenerator, Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel, Session
+from sqlmodel import Session, SQLModel
 
 from app.config import settings
 
@@ -56,7 +56,7 @@ def get_session() -> Generator[Session, None, None]:
         session.close()
 
 
-async def get_session_async() -> Generator[Session, None, None]:
+async def get_session_async() -> AsyncGenerator[Session, None]:
     """Async version of get_session (for async endpoints)."""
     session = SessionLocal()
     try:

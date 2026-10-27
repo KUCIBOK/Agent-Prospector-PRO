@@ -85,3 +85,7 @@ temp/
 # OS
 Thumbs.db
 .DS_Store
+
+# Secrets: never commit real environment files (only .env.example)
+.env.*
+!.env.example

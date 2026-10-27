@@ -3,18 +3,19 @@ Celery tasks — background jobs for discovery, enrichment, scoring, etc.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlmodel import Session
+from sqlmodel import col
 
 from app.db import SessionLocal
-from app.models import Job, JobType, JobStatus, JobError, Prospect
+from app.models import Job, JobError, JobStatus, JobType
+from app.models.base import require_id
 from app.workers.celery_app import app
 
 logger = logging.getLogger(__name__)
 
 
-def log_job_error(job_id: int, error_msg: str, stack_trace: str = None) -> None:
+def log_job_error(job_id: int, error_msg: str, stack_trace: str | None = None) -> None:
     """Helper to log job errors."""
     session = SessionLocal()
     try:
@@ -53,7 +54,7 @@ def rescore_artists_advanced(self) -> dict:
         job = Job(
             job_type=JobType.SCORING,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -66,7 +67,7 @@ def rescore_artists_advanced(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = len(results)
         session.add(job)
         session.commit()
@@ -79,7 +80,7 @@ def rescore_artists_advanced(self) -> dict:
         }
 
     except Exception as exc:
-        logger.error(f"❌ Advanced re-scoring failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Advanced re-scoring failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -91,7 +92,7 @@ def rescore_artists_advanced(self) -> dict:
             session.add(job)
             session.commit()
 
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries)) from exc
 
     finally:
         session.close()
@@ -118,7 +119,7 @@ def detect_intent_signals(self) -> dict:
         job = Job(
             job_type=JobType.INTENT_DETECTION,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -131,7 +132,7 @@ def detect_intent_signals(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = signal_count
         session.add(job)
         session.commit()
@@ -144,7 +145,7 @@ def detect_intent_signals(self) -> dict:
         }
 
     except Exception as exc:
-        logger.error(f"❌ Intent detection failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Intent detection failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -157,7 +158,7 @@ def detect_intent_signals(self) -> dict:
             session.commit()
 
         # Retry exponentially
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries)) from exc
 
     finally:
         session.close()
@@ -183,7 +184,7 @@ def analyze_instagram_artists(self) -> dict:
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -196,7 +197,7 @@ def analyze_instagram_artists(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = len(results)
         session.add(job)
         session.commit()
@@ -209,7 +210,7 @@ def analyze_instagram_artists(self) -> dict:
         }
 
     except Exception as exc:
-        logger.error(f"❌ Instagram analysis failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Instagram analysis failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -221,7 +222,7 @@ def analyze_instagram_artists(self) -> dict:
             session.add(job)
             session.commit()
 
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries)) from exc
 
     finally:
         session.close()
@@ -247,7 +248,7 @@ def monitor_linkedin_curators(self) -> dict:
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -260,7 +261,7 @@ def monitor_linkedin_curators(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = len(signals)
         session.add(job)
         session.commit()
@@ -273,7 +274,7 @@ def monitor_linkedin_curators(self) -> dict:
         }
 
     except Exception as exc:
-        logger.error(f"❌ LinkedIn monitoring failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ LinkedIn monitoring failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -285,7 +286,7 @@ def monitor_linkedin_curators(self) -> dict:
             session.add(job)
             session.commit()
 
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries)) from exc
 
     finally:
         session.close()
@@ -310,7 +311,7 @@ def run_discovery(self) -> dict:
         job = Job(
             job_type=JobType.DISCOVERY,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -332,12 +333,14 @@ def run_discovery(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = total
         session.add(job)
         session.commit()
 
-        logger.info(f"✅ Discovery complete: {total} prospects found ({artist_count} artists, {client_count} clients)")
+        logger.info(
+            f"✅ Discovery complete: {total} prospects found ({artist_count} artists, {client_count} clients)"
+        )
         return {
             "job_id": job.id,
             "status": "SUCCESS",
@@ -347,7 +350,7 @@ def run_discovery(self) -> dict:
         }
 
     except Exception as exc:
-        logger.error(f"❌ Discovery failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Discovery failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -358,9 +361,9 @@ def run_discovery(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
     finally:
         session.close()
@@ -380,14 +383,15 @@ def run_crawling(self) -> dict:
     job = None
 
     try:
-        from app.services.crawler import Crawler
-        from app.models import Prospect, ProspectStatus
         from sqlmodel import select
+
+        from app.models import Prospect, ProspectStatus
+        from app.services.crawler import Crawler
 
         job = Job(
             job_type=JobType.CRAWLING,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -400,7 +404,7 @@ def run_crawling(self) -> dict:
         # Get prospects with websites to crawl
         prospects = session.exec(
             select(Prospect)
-            .where(Prospect.website.isnot(None))
+            .where(col(Prospect.website).isnot(None))
             .where(Prospect.status == ProspectStatus.IDENTIFIED)
             .limit(50)
         ).all()
@@ -420,10 +424,10 @@ def run_crawling(self) -> dict:
                     session.commit()
 
             except Exception as e:
-                logger.error(f"Error crawling {prospect.name}: {str(e)}")
+                logger.error(f"Error crawling {prospect.name}: {e!s}")
 
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = result_count
         session.add(job)
         session.commit()
@@ -432,7 +436,7 @@ def run_crawling(self) -> dict:
         return {"job_id": job.id, "status": "SUCCESS", "result_count": result_count}
 
     except Exception as exc:
-        logger.error(f"❌ Crawling failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Crawling failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -443,9 +447,9 @@ def run_crawling(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
     finally:
         session.close()
@@ -470,7 +474,7 @@ def run_enrichment(self) -> dict:
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -482,7 +486,7 @@ def run_enrichment(self) -> dict:
         results = enricher.bulk_enrich_prospects(limit=100)
 
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = results["enriched"]
         session.add(job)
         session.commit()
@@ -491,7 +495,7 @@ def run_enrichment(self) -> dict:
         return {"job_id": job.id, "status": "SUCCESS", "result_count": results["enriched"]}
 
     except Exception as exc:
-        logger.error(f"❌ Enrichment failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Enrichment failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -502,9 +506,9 @@ def run_enrichment(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
     finally:
         session.close()
@@ -525,29 +529,30 @@ def run_scoring(self) -> dict:
     job = None
 
     try:
-        from app.services.analysis import AnalysisService
-        from app.services.scoring import (
-            calculate_artist_fit_score,
-            calculate_saas_fit_score,
-            calculate_confidence_score,
-            calculate_priority,
-        )
-        from app.services.outreach import generate_message_variants
+        from sqlmodel import select
+
+        from app.ai.providers import get_ai_provider
         from app.models import (
+            Message,
             Prospect,
-            ProspectType,
             ProspectStatus,
+            ProspectType,
             Score,
             ScoreType,
-            Message,
         )
-        from app.ai.providers import get_ai_provider
-        from sqlmodel import select
+        from app.services.analysis import AnalysisService
+        from app.services.outreach import generate_message_variants
+        from app.services.scoring import (
+            calculate_artist_fit_score,
+            calculate_confidence_score,
+            calculate_priority,
+            calculate_saas_fit_score,
+        )
 
         job = Job(
             job_type=JobType.SCORING,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -563,9 +568,7 @@ def run_scoring(self) -> dict:
 
         # Score and generate messages
         prospects = session.exec(
-            select(Prospect)
-            .where(Prospect.status == ProspectStatus.IDENTIFIED)
-            .limit(100)
+            select(Prospect).where(Prospect.status == ProspectStatus.IDENTIFIED).limit(100)
         ).all()
 
         result_count = 0
@@ -594,7 +597,7 @@ def run_scoring(self) -> dict:
 
                 # Store score
                 score_record = Score(
-                    prospect_id=prospect.id,
+                    prospect_id=require_id(prospect),
                     score_type=score_type,
                     score=score,
                     breakdown=breakdown,
@@ -611,7 +614,7 @@ def run_scoring(self) -> dict:
 
                     for variant in variants:
                         message = Message(
-                            prospect_id=prospect.id,
+                            prospect_id=require_id(prospect),
                             persona=variant["persona"],
                             variant_label=variant["variant_label"],
                             content=variant["content"],
@@ -623,12 +626,12 @@ def run_scoring(self) -> dict:
                 result_count += 1
 
             except Exception as e:
-                logger.error(f"Error scoring {prospect.name}: {str(e)}")
+                logger.error(f"Error scoring {prospect.name}: {e!s}")
 
         session.commit()
 
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = result_count
         session.add(job)
         session.commit()
@@ -637,7 +640,7 @@ def run_scoring(self) -> dict:
         return {"job_id": job.id, "status": "SUCCESS", "result_count": result_count}
 
     except Exception as exc:
-        logger.error(f"❌ Scoring failed: {str(exc)}", exc_info=True)
+        logger.error(f"❌ Scoring failed: {exc!s}", exc_info=True)
 
         if job:
             job.attempts += 1
@@ -648,9 +651,9 @@ def run_scoring(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
-        raise self.retry(exc=exc, countdown=60)
+        raise self.retry(exc=exc, countdown=60) from exc
 
     finally:
         session.close()
@@ -659,4 +662,4 @@ def run_scoring(self) -> dict:
 @app.task
 def health_check() -> dict:
     """Health check task."""
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}

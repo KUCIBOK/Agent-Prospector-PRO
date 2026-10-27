@@ -5,22 +5,21 @@ Monitoring routes — system health and job status.
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from sqlmodel import select, func
+from sqlmodel import Session, col, func, select
 
 from app.db import get_session
 from app.models import (
-    Prospect,
-    ProspectType,
     Job,
     JobStatus,
     Message,
+    Prospect,
+    ProspectType,
     Signal,
 )
-from app.schemas import JobResponse, JobsListResponse, MonitoringResponse
+from app.schemas import JobResponse, JobsListResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
@@ -34,7 +33,7 @@ def health_check():
     """Simple health check."""
     return {
         "status": "ok",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": int(time.time() - START_TIME),
     }
 
@@ -46,7 +45,7 @@ def list_jobs(
     limit: int = Query(50, ge=1, le=500),
 ) -> JobsListResponse:
     """List recent jobs with status breakdown."""
-    query = select(Job).order_by(Job.created_at.desc()).limit(limit)
+    query = select(Job).order_by(col(Job.created_at).desc()).limit(limit)
 
     if status:
         query = query.where(Job.status == status)
@@ -54,10 +53,18 @@ def list_jobs(
     jobs = session.exec(query).all()
 
     # Count by status
-    pending = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.PENDING))
-    running = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.RUNNING))
-    success = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.SUCCESS))
-    failed = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED))
+    pending = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.PENDING)
+    )
+    running = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.RUNNING)
+    )
+    success = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.SUCCESS)
+    )
+    failed = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED)
+    )
 
     return JobsListResponse(
         total=len(jobs),
@@ -115,11 +122,19 @@ def prospect_stats(session: Session = Depends(get_session)):
 def message_stats(session: Session = Depends(get_session)):
     """Get message statistics."""
     total = session.scalar(select(func.count()).select_from(Message))
-    draft = session.scalar(select(func.count()).select_from(Message).where(Message.status == "DRAFT"))
+    draft = session.scalar(
+        select(func.count()).select_from(Message).where(Message.status == "DRAFT")
+    )
     sent = session.scalar(select(func.count()).select_from(Message).where(Message.status == "SENT"))
-    replied = session.scalar(select(func.count()).select_from(Message).where(Message.outcome == "REPLIED"))
-    meeting = session.scalar(select(func.count()).select_from(Message).where(Message.outcome == "MEETING"))
-    customer = session.scalar(select(func.count()).select_from(Message).where(Message.outcome == "CUSTOMER"))
+    replied = session.scalar(
+        select(func.count()).select_from(Message).where(Message.outcome == "REPLIED")
+    )
+    meeting = session.scalar(
+        select(func.count()).select_from(Message).where(Message.outcome == "MEETING")
+    )
+    customer = session.scalar(
+        select(func.count()).select_from(Message).where(Message.outcome == "CUSTOMER")
+    )
 
     return {
         "total": total or 0,
@@ -140,7 +155,7 @@ def system_info():
     """Get system information."""
     return {
         "uptime_seconds": int(time.time() - START_TIME),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "environment": os.getenv("ENVIRONMENT", "production"),
         "debug": os.getenv("DEBUG", "false").lower() == "true",
     }
@@ -194,11 +209,11 @@ def recent_signals(
     """Get recently detected intent signals."""
     from datetime import timedelta
 
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     signals = session.exec(
         select(Signal)
         .where(Signal.signal_date >= cutoff)
-        .order_by(Signal.signal_date.desc())
+        .order_by(col(Signal.signal_date).desc())
         .limit(limit)
     ).all()
 
@@ -227,18 +242,25 @@ def summary(session: Session = Depends(get_session)):
     artists = session.scalar(
         select(func.count()).select_from(Prospect).where(Prospect.type == ProspectType.ARTIST)
     )
-    clients = prospects_total - artists if prospects_total else 0
+    clients = (prospects_total or 0) - (artists or 0)
 
     messages_total = session.scalar(select(func.count()).select_from(Message))
-    messages_draft = session.scalar(select(func.count()).select_from(Message).where(Message.status == "DRAFT"))
-    messages_sent = session.scalar(select(func.count()).select_from(Message).where(Message.status == "SENT"))
+    messages_draft = session.scalar(
+        select(func.count()).select_from(Message).where(Message.status == "DRAFT")
+    )
+    messages_sent = session.scalar(
+        select(func.count()).select_from(Message).where(Message.status == "SENT")
+    )
 
     jobs_total = session.scalar(select(func.count()).select_from(Job))
-    jobs_failed = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED))
+    jobs_failed = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED)
+    )
 
     # NEW: Count recent signals (last 7 days)
     from datetime import timedelta
-    recent_cutoff = datetime.utcnow() - timedelta(days=7)
+
+    recent_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     recent_signals = session.scalar(
         select(func.count()).select_from(Signal).where(Signal.signal_date >= recent_cutoff)
     )

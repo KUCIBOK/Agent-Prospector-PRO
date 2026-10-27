@@ -2,20 +2,18 @@
 Prospect routes — CRUD operations and discovery.
 """
 
-from typing import Optional
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from sqlalchemy.orm import Session
-from sqlmodel import select, func
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from sqlmodel import Session, col, func, select
 
 from app.db import get_session
-from app.models import Prospect, ProspectType, ProspectStatus, Priority
+from app.models import Priority, Prospect, ProspectStatus, ProspectType
 from app.schemas import (
     ProspectCreate,
-    ProspectUpdate,
     ProspectResponse,
     ProspectsListResponse,
+    ProspectUpdate,
 )
 from app.services.deep_google_source import DeepGoogleSource
 
@@ -28,11 +26,11 @@ def list_prospects(
     session: Session = Depends(get_session),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    prospect_type: Optional[ProspectType] = None,
-    status: Optional[ProspectStatus] = None,
-    priority: Optional[Priority] = None,
-    country: Optional[str] = None,
-    search: Optional[str] = None,
+    prospect_type: ProspectType | None = None,
+    status: ProspectStatus | None = None,
+    priority: Priority | None = None,
+    country: str | None = None,
+    search: str | None = None,
 ) -> ProspectsListResponse:
     """
     List prospects with filtering and pagination.
@@ -56,10 +54,10 @@ def list_prospects(
     if priority:
         query = query.where(Prospect.priority == priority)
     if country:
-        query = query.where(Prospect.country.ilike(f"%{country}%"))
+        query = query.where(col(Prospect.country).ilike(f"%{country}%"))
     if search:
         query = query.where(
-            (Prospect.name.ilike(f"%{search}%")) | (Prospect.email.ilike(f"%{search}%"))
+            (col(Prospect.name).ilike(f"%{search}%")) | (col(Prospect.email).ilike(f"%{search}%"))
         )
 
     # Count total
@@ -104,7 +102,9 @@ def create_prospect(
                 select(Prospect).where(Prospect.email == prospect_in.email)
             ).first()
             if existing:
-                raise HTTPException(status_code=409, detail="Prospect with this email already exists")
+                raise HTTPException(
+                    status_code=409, detail="Prospect with this email already exists"
+                )
 
         # Create prospect
         prospect = Prospect(**prospect_in.model_dump())
@@ -119,9 +119,9 @@ def create_prospect(
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        logger.error(f"❌ Error creating prospect: {str(e)}", exc_info=True)
+        logger.exception("❌ Error creating prospect")
         # Server errors (DB, validation) should return 500, not 400
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.patch("/{prospect_id}", response_model=ProspectResponse)
@@ -164,7 +164,7 @@ def delete_prospect(prospect_id: int, session: Session = Depends(get_session)) -
 def stats_by_type(session: Session = Depends(get_session)):
     """Get prospect counts by type."""
     types = session.exec(
-        select(Prospect.type, func.count(Prospect.id)).group_by(Prospect.type)
+        select(Prospect.type, func.count(col(Prospect.id))).group_by(Prospect.type)
     ).all()
 
     return {"by_type": {str(t): count for t, count in types}}
@@ -174,7 +174,7 @@ def stats_by_type(session: Session = Depends(get_session)):
 def stats_by_priority(session: Session = Depends(get_session)):
     """Get prospect counts by priority."""
     priorities = session.exec(
-        select(Prospect.priority, func.count(Prospect.id)).group_by(Prospect.priority)
+        select(Prospect.priority, func.count(col(Prospect.id))).group_by(Prospect.priority)
     ).all()
 
     return {"by_priority": {str(p): count for p, count in priorities if p}}
@@ -229,15 +229,17 @@ def deep_source_curators(
         # Convert prospects to response format
         prospects_response = []
         for prospect in results.get("prospects", []):
-            prospects_response.append({
-                "id": prospect.id,
-                "name": prospect.name,
-                "type": str(prospect.type),
-                "email": prospect.email,
-                "website": prospect.website,
-                "description": prospect.description,
-                "country": prospect.country,
-            })
+            prospects_response.append(
+                {
+                    "id": prospect.id,
+                    "name": prospect.name,
+                    "type": str(prospect.type),
+                    "email": prospect.email,
+                    "website": prospect.website,
+                    "description": prospect.description,
+                    "country": prospect.country,
+                }
+            )
 
         response = {
             "created": results["created"],
@@ -251,14 +253,16 @@ def deep_source_curators(
                 "2. System will auto-enrich profiles (24h)",
                 "3. Auto-score prospects (SaaS Fit, Priority P1-P4)",
                 "4. Auto-send 'Sourcing & Vetting' emails to P1-P2",
-                "5. Follow-ups scheduled (days 3, 7, 14)"
-            ]
+                "5. Follow-ups scheduled (days 3, 7, 14)",
+            ],
         }
 
-        logger.info(f"✅ Deep source complete: {results['created']} created, {results['duplicates']} duplicates")
+        logger.info(
+            f"✅ Deep source complete: {results['created']} created, {results['duplicates']} duplicates"
+        )
 
         return response
 
     except Exception as e:
-        logger.error(f"❌ Deep sourcing failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Deep sourcing failed: {str(e)}")
+        logger.exception("❌ Deep sourcing failed")
+        raise HTTPException(status_code=500, detail="Deep sourcing failed") from e

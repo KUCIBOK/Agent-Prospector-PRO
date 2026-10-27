@@ -15,13 +15,13 @@ Detects:
 
 import logging
 import re
-from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pycountry
 from sqlmodel import Session
 
-from app.models import Prospect, Signal, SignalType, Importance, Confidence
+from app.models import Confidence, Importance, Prospect, Signal, SignalType
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Enrichment:
         self.session = session
 
     @staticmethod
-    def normalize_country(country: str) -> Optional[str]:
+    def normalize_country(country: str) -> str | None:
         """
         Normalize country name to ISO 3166-1 alpha-2 code.
 
@@ -51,22 +51,22 @@ class Enrichment:
             country_obj = pycountry.countries.get(alpha_2=country.upper())
             if country_obj:
                 return country_obj.alpha_2
-        except:
+        except Exception:
             pass
 
         # Try by name
         try:
-            country_obj = pycountry.countries.search_fuzzy(country.strip())
-            if country_obj:
-                return country_obj[0].alpha_2
-        except:
+            matches = pycountry.countries.search_fuzzy(country.strip())
+            if matches:
+                return matches[0].alpha_2
+        except Exception:
             pass
 
         logger.warning(f"Could not normalize country: {country}")
         return None
 
     @staticmethod
-    def normalize_email(email: Optional[str]) -> Optional[str]:
+    def normalize_email(email: str | None) -> str | None:
         """
         Normalize email address.
 
@@ -88,7 +88,7 @@ class Enrichment:
         return email
 
     @staticmethod
-    def normalize_url(url: Optional[str]) -> Optional[str]:
+    def normalize_url(url: str | None) -> str | None:
         """
         Normalize URL.
 
@@ -103,13 +103,12 @@ class Enrichment:
             url = f"https://{url}"
 
         # Remove trailing slash
-        if url.endswith("/"):
-            url = url[:-1]
+        url = url.removesuffix("/")
 
         return url
 
     @staticmethod
-    def normalize_name(name: Optional[str]) -> Optional[str]:
+    def normalize_name(name: str | None) -> str | None:
         """
         Normalize name.
 
@@ -126,7 +125,7 @@ class Enrichment:
         return name
 
     @staticmethod
-    def normalize_phone(phone: Optional[str]) -> Optional[str]:
+    def normalize_phone(phone: str | None) -> str | None:
         """
         Normalize phone number.
 
@@ -145,7 +144,7 @@ class Enrichment:
 
         return phone
 
-    def enrich_prospect(self, prospect: Prospect, crawl_data: dict = None) -> Prospect:
+    def enrich_prospect(self, prospect: Prospect, crawl_data: dict | None = None) -> Prospect:
         """
         Enrich prospect data with normalizations.
 
@@ -207,7 +206,7 @@ class Enrichment:
                 updated = True
 
         if updated:
-            prospect.updated_at = datetime.utcnow()
+            prospect.updated_at = datetime.now(timezone.utc)
             self.session.add(prospect)
             self.session.commit()
             logger.info(f"✅ Enriched prospect: {prospect.name}")
@@ -228,10 +227,12 @@ class Enrichment:
         - Partnership
         - Acquisition
         """
-        signals = []
+        signals: list[Signal] = []
         text = (
-            (prospect.description or "") + " "
-            + (prospect.specialty or "") + " "
+            (prospect.description or "")
+            + " "
+            + (prospect.specialty or "")
+            + " "
             + (prospect.africa_interest or "")
         ).lower()
 
@@ -241,10 +242,10 @@ class Enrichment:
         # Exhibition signals
         if any(word in text for word in ["exhibition", "expo", "show", "displayed"]):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.NEW_EXHIBITION,
                 description="Detected exhibition activity",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.MEDIUM,
                 confidence=Confidence.MEDIUM,
             )
@@ -252,14 +253,13 @@ class Enrichment:
 
         # Call for artists
         if any(
-            word in text
-            for word in ["call for artists", "open call", "submissions", "apply now"]
+            word in text for word in ["call for artists", "open call", "submissions", "apply now"]
         ):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.CALL_FOR_ARTISTS,
                 description="Detected call for artists",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.HIGH,
                 confidence=Confidence.MEDIUM,
             )
@@ -268,10 +268,10 @@ class Enrichment:
         # Fair participation
         if any(word in text for word in ["fair", "biennial", "triennial", "biennale"]):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.FAIR_PARTICIPATION,
                 description="Detected fair/biennial participation",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.MEDIUM,
                 confidence=Confidence.MEDIUM,
             )
@@ -289,10 +289,10 @@ class Enrichment:
             ]
         ):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.INTERNATIONAL_ACTIVITY,
                 description="Detected international activity",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.MEDIUM,
                 confidence=Confidence.MEDIUM,
             )
@@ -301,11 +301,15 @@ class Enrichment:
         # Africa interest (already in data, but flag as signal)
         if prospect.africa_interest and prospect.africa_interest.upper() in ["HIGH", "MEDIUM"]:
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.INTERNATIONAL_ACTIVITY,
                 description=f"Detected Africa interest: {prospect.africa_interest}",
-                signal_date=datetime.utcnow(),
-                importance=Importance.HIGH if prospect.africa_interest.upper() == "HIGH" else Importance.MEDIUM,
+                signal_date=datetime.now(timezone.utc),
+                importance=(
+                    Importance.HIGH
+                    if prospect.africa_interest.upper() == "HIGH"
+                    else Importance.MEDIUM
+                ),
                 confidence=Confidence.HIGH,
             )
             signals.append(signal)
@@ -326,16 +330,15 @@ class Enrichment:
 
         Returns: {enriched: N, total: N}
         """
-        from app.models import ProspectStatus
         from sqlmodel import select
+
+        from app.models import ProspectStatus
 
         logger.info(f"🔄 Bulk enrichment (limit: {limit})...")
 
         # Get prospects needing enrichment
         prospects = self.session.exec(
-            select(Prospect)
-            .where(Prospect.status == ProspectStatus.IDENTIFIED)
-            .limit(limit)
+            select(Prospect).where(Prospect.status == ProspectStatus.IDENTIFIED).limit(limit)
         ).all()
 
         enriched = 0
@@ -345,7 +348,7 @@ class Enrichment:
                 self.detect_intent_signals(prospect)
                 enriched += 1
             except Exception as e:
-                logger.error(f"Error enriching {prospect.name}: {str(e)}")
+                logger.error(f"Error enriching {prospect.name}: {e!s}")
 
         logger.info(f"✅ Bulk enrichment complete: {enriched}/{len(prospects)} prospects")
         return {

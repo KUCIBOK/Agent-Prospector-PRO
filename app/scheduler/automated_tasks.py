@@ -17,11 +17,11 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.config import settings
 from app.db import SessionLocal
-from app.services.automated_prospecting import (
-    AutomatedProspectingEngine,
-    AutomatedProspectingConfig,
-)
 from app.models import ProspectType
+from app.services.automated_prospecting import (
+    AutomatedProspectingConfig,
+    AutomatedProspectingEngine,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def run_3am_prospecting_job():
         logger.info(f"Summary: {scrape_results['created']} new prospects found & emailed")
 
     except Exception as e:
-        logger.error(f"❌ Automation failed: {str(e)}", exc_info=True)
+        logger.error(f"❌ Automation failed: {e!s}", exc_info=True)
 
     finally:
         session.close()
@@ -99,7 +99,7 @@ def run_daily_follow_ups():
         logger.info("✅ Follow-ups sent")
 
     except Exception as e:
-        logger.error(f"❌ Follow-up failed: {str(e)}")
+        logger.error(f"❌ Follow-up failed: {e!s}")
 
     finally:
         session.close()
@@ -112,15 +112,20 @@ def run_daily_analytics():
     session = SessionLocal()
 
     try:
-        from sqlmodel import select, func
-        from app.models import Prospect, Message, ProspectStatus
+        from sqlmodel import func, select
+
+        from app.models import Message, Prospect, ProspectStatus
 
         total_prospects = session.scalar(select(func.count()).select_from(Prospect))
         identified = session.scalar(
-            select(func.count()).select_from(Prospect).where(Prospect.status == ProspectStatus.IDENTIFIED)
+            select(func.count())
+            .select_from(Prospect)
+            .where(Prospect.status == ProspectStatus.IDENTIFIED)
         )
         prequalified = session.scalar(
-            select(func.count()).select_from(Prospect).where(Prospect.status == ProspectStatus.PREQUALIFIED)
+            select(func.count())
+            .select_from(Prospect)
+            .where(Prospect.status == ProspectStatus.PREQUALIFIED)
         )
 
         total_emails = session.scalar(select(func.count()).select_from(Message))
@@ -128,7 +133,7 @@ def run_daily_analytics():
             select(func.count()).select_from(Message).where(Message.status == "SENT")
         )
 
-        logger.info(f"📈 Daily Stats:")
+        logger.info("📈 Daily Stats:")
         logger.info(f"   Total prospects: {total_prospects}")
         logger.info(f"   Identified: {identified}")
         logger.info(f"   Prequalified: {prequalified}")
@@ -136,7 +141,7 @@ def run_daily_analytics():
         logger.info(f"   Emails sent: {emails_sent}")
 
     except Exception as e:
-        logger.error(f"❌ Analytics failed: {str(e)}")
+        logger.error(f"❌ Analytics failed: {e!s}")
 
     finally:
         session.close()
@@ -267,6 +272,7 @@ if __name__ == "__main__":
     try:
         # Keep running
         import time
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

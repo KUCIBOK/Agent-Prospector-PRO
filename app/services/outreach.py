@@ -7,8 +7,7 @@ Based on LOGIC.md section 16:
 - Respect guardrails (no invented data, LOW confidence = generic)
 """
 
-from typing import Optional
-from app.models import Prospect, Message, MessageStatus, ConfidenceLevel
+from app.models import ConfidenceLevel, MessageStatus, Prospect
 
 
 def detect_persona(prospect: Prospect) -> str:
@@ -34,7 +33,7 @@ def generate_message_variant(
     prospect: Prospect,
     persona: str,
     variant_label: str,
-    reason_to_contact: Optional[dict] = None,
+    reason_to_contact: dict | None = None,
 ) -> str:
     """
     Generate a single message variant.
@@ -81,7 +80,6 @@ Best,
 Kucibok Team"""
     else:
         # Personalized message with specific context
-        country = prospect.country or "Africa"
         why = reason_to_contact.get("why", "") if reason_to_contact else ""
 
         if persona == "CURATOR":
@@ -110,7 +108,7 @@ Kucibok Team"""
 
 def generate_message_variants(
     prospect: Prospect,
-    reason_to_contact: Optional[dict] = None,
+    reason_to_contact: dict | None = None,
     count: int = 3,
 ) -> list[dict]:
     """
@@ -124,7 +122,7 @@ def generate_message_variants(
 
     labels = ["variant_1_short", "variant_2_medium", "variant_3_long"][:count]
 
-    for i, label in enumerate(labels):
+    for label in labels:
         content = generate_message_variant(prospect, persona, label, reason_to_contact)
         variants.append(
             {

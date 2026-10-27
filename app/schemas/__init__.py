@@ -2,19 +2,19 @@
 Pydantic schemas for request/response validation.
 """
 
-from app.schemas.prospect import (
-    ProspectCreate,
-    ProspectUpdate,
-    ProspectResponse,
-    ProspectsListResponse,
-)
+from app.schemas.job import JobResponse, JobsListResponse, MonitoringResponse
 from app.schemas.message import (
     MessageCreate,
-    MessageUpdate,
     MessageResponse,
     MessagesQueueResponse,
+    MessageUpdate,
 )
-from app.schemas.job import JobResponse, JobsListResponse, MonitoringResponse
+from app.schemas.prospect import (
+    ProspectCreate,
+    ProspectResponse,
+    ProspectsListResponse,
+    ProspectUpdate,
+)
 
 __all__ = [
     # Prospect

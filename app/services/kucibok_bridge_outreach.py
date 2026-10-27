@@ -10,25 +10,28 @@ Implements the Kucibok Bridge Playbook:
 """
 
 import logging
-from typing import Optional, Dict, List
+from datetime import datetime, timedelta, timezone
 from enum import Enum
-from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import Prospect, ProspectType, Message, MessageStatus
+from app.models import Message, MessageChannel, MessageStatus, Prospect, ProspectType
+from app.models.base import require_id
+from app.services.outreach import detect_persona
 
 logger = logging.getLogger(__name__)
 
 
 class CuratorSegment(str, Enum):
     """Curator types in the Kucibok Bridge playbook."""
+
     CURATOR = "CURATOR"  # Independent or institutional curator
     AUCTIONEER = "AUCTIONEER"  # Auction house commissaire-priseur
 
 
 class MessagePersona(str, Enum):
     """Persona for outreach."""
+
     MOCTAR = "moctar"  # Always use Moctar Sidibé for direct contact
 
 
@@ -48,16 +51,13 @@ class KucibokBridgeOutreach:
     # Message templates by segment
     CURATOR_VARIANTS = [
         """Bonjour {first_name}, je vous contacte depuis Dakar où je travaille sur le sourcing d'artistes émergents d'Afrique de l'Ouest pour des curateurs internationaux. Chaque profil est vérifié sur le terrain avant d'être présenté. Je vous partage volontiers un premier dossier si le sujet vous intéresse, sans engagement.""",
-
         """Bonjour {first_name}, votre travail sur {context} rejoint ce que je fais au quotidien à Dakar : sourcer et vérifier des artistes émergents pour des curateurs qui ne peuvent pas se déplacer sur place. Je peux vous envoyer un dossier complet sur un premier profil si vous voulez voir le format.""",
-
-        """Bonjour {first_name}, je m'appelle Moctar, basé à Dakar. Je prépare des dossiers de sourcing vérifiés sur des artistes émergents ouest-africains pour des curateurs à l'international. Un appel de 15 minutes vous intéresserait pour voir si ça correspond à vos recherches actuelles ?"""
+        """Bonjour {first_name}, je m'appelle Moctar, basé à Dakar. Je prépare des dossiers de sourcing vérifiés sur des artistes émergents ouest-africains pour des curateurs à l'international. Un appel de 15 minutes vous intéresserait pour voir si ça correspond à vos recherches actuelles ?""",
     ]
 
     AUCTIONEER_VARIANTS = [
         """Bonjour {first_name}, je travaille à Dakar sur la traçabilité et la vérification d'œuvres d'artistes émergents ouest-africains — provenance, disponibilité, documentation complète. Si vos prochains catalogues incluent une section art contemporain africain, je peux vous transmettre un dossier de consignation type. Bonne journée.""",
-
-        """Bonjour {first_name}, je vous contacte au sujet du marché émergent de l'art contemporain ouest-africain. Je constitue des dossiers de provenance vérifiée sur des artistes encore peu documentés à l'international — utile si vous envisagez d'élargir vos catalogues sur ce segment. Je peux vous envoyer un exemple."""
+        """Bonjour {first_name}, je vous contacte au sujet du marché émergent de l'art contemporain ouest-africain. Je constitue des dossiers de provenance vérifiée sur des artistes encore peu documentés à l'international — utile si vous envisagez d'élargir vos catalogues sur ce segment. Je peux vous envoyer un exemple.""",
     ]
 
     FOLLOWUP_TEMPLATE = """Bonjour {first_name}, je me permets de faire remonter mon message au cas où il serait passé inaperçu. Bonne journée."""
@@ -74,10 +74,14 @@ class KucibokBridgeOutreach:
         """
         if prospect.type == ProspectType.CURATOR:
             return CuratorSegment.CURATOR
-        elif "auctioneer" in (prospect.description or "").lower() or \
-             "commissaire" in (prospect.description or "").lower() or \
-             any(name in prospect.name.lower() for name in
-                 ["christie", "sotheby", "artcurial", "piasa", "aguttes", "drouot"]):
+        elif (
+            "auctioneer" in (prospect.description or "").lower()
+            or "commissaire" in (prospect.description or "").lower()
+            or any(
+                name in prospect.name.lower()
+                for name in ["christie", "sotheby", "artcurial", "piasa", "aguttes", "drouot"]
+            )
+        ):
             return CuratorSegment.AUCTIONEER
         else:
             # Default to curator
@@ -146,7 +150,7 @@ class KucibokBridgeOutreach:
         artist_medium: str,
         works_available: int,
         dossier_url: str,
-        opening_message: str = None,
+        opening_message: str | None = None,
     ) -> str:
         """
         Render the Kucibok Bridge HTML email template.
@@ -308,7 +312,7 @@ class KucibokBridgeOutreach:
         self,
         prospect: Prospect,
         days_delay: int = 5,
-    ) -> Optional[datetime]:
+    ) -> datetime | None:
         """
         Schedule follow-up message for prospect.
 
@@ -333,11 +337,11 @@ class KucibokBridgeOutreach:
             return None
 
         # Schedule follow-up
-        followup_date = datetime.utcnow() + timedelta(days=days_delay)
+        followup_date = datetime.now(timezone.utc) + timedelta(days=days_delay)
 
         return followup_date
 
-    def validate_message_rules(self, message: str) -> Dict[str, bool]:
+    def validate_message_rules(self, message: str) -> dict[str, bool]:
         """
         Validate message against Kucibok Bridge rules.
 
@@ -377,12 +381,13 @@ class KucibokBridgeOutreach:
             Created Message record
         """
         msg = Message(
-            prospect_id=prospect.id,
-            type="KUCIBOK_BRIDGE_PLAYBOOK",
+            prospect_id=require_id(prospect),
+            persona=detect_persona(prospect),
+            variant_label="KUCIBOK_BRIDGE_PLAYBOOK",
+            channel=MessageChannel.EMAIL,
             status=MessageStatus.SENT,
-            subject=f"Sourcing & Vetting - {prospect.name}",
-            body=message,
-            sent_at=datetime.utcnow(),
+            content=f"Subject: Sourcing & Vetting - {prospect.name}\n\n{message}",
+            sent_at=datetime.now(timezone.utc),
         )
 
         self.session.add(msg)

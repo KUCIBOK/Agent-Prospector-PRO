@@ -2,10 +2,9 @@
 Job error model — detailed error logging.
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
 
-from sqlmodel import Field, ForeignKey
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -21,8 +20,8 @@ class JobError(BaseModel, table=True):
         timestamp: When error occurred
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     job_id: int = Field(foreign_key="job.id", index=True)
     error_message: str
-    stack_trace: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
+    stack_trace: str | None = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)

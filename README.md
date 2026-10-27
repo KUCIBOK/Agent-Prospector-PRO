@@ -21,6 +21,16 @@ All fully automated, running 24/7 on your infrastructure.
 
 ---
 
+## ⚠️ Known limitations
+
+- **Prototype, not production-ready.** `docker-compose.yml` is not in the repository yet, so the Quick Start below cannot be run as written.
+- **Deep Source discovery is a placeholder.** `scrape_google_search()` returns no results until a search provider (SearxNG, SerpAPI, ...) is connected.
+- **No measured funnel results.** Figures such as reply rates or revenue per batch were hypotheses and have been removed. Do not rely on them.
+- **Authentication:** all `/api` routes require an `X-API-Key` header matching the `API_KEY` environment variable. Set it before exposing the service.
+- **Secrets:** never commit `.env*` files. Only `.env.example` is tracked.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -36,7 +46,7 @@ All fully automated, running 24/7 on your infrastructure.
    git clone <repo-url>
    cd kucibok-prospector
    cp .env.example .env
-   # Edit .env with your settings
+   # Edit .env: set API_KEY, SECRET_KEY, DB_USER, DB_PASSWORD, DB_NAME
    ```
 
 2. **Build & Run**
@@ -76,6 +86,22 @@ celery -A app.workers.tasks worker --loglevel=info
 # In another terminal, run scheduler
 python -m app.scheduler.main
 ```
+
+---
+
+## 🧹 Removing fake prospects from an existing database
+
+Older versions shipped scripts that generated fictional Paris curators. To remove
+any that are in your database (dry run by default, backup written before deleting):
+
+```bash
+python -m scripts.cleanup_fake_prospects                       # list what would be deleted
+python -m scripts.cleanup_fake_prospects --keep-email me@x.com # protect a test contact
+python -m scripts.cleanup_fake_prospects --apply               # back up, confirm, delete
+```
+
+Only prospects with no source URL that match a generator pattern are candidates.
+Verified or enrolled prospects and anyone already contacted are never deleted.
 
 ---
 

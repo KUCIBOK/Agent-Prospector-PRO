@@ -12,16 +12,16 @@ Result: Better identification of truly professional, market-ready artists.
 """
 
 import logging
-from typing import Optional, List, Dict
-from datetime import datetime, timedelta
-import re
+from datetime import datetime, timezone
+from typing import Any
 
 from sqlmodel import Session, select
-import requests
 
-from app.models import Prospect, ProspectType, Signal, SignalType
-from app.services.scoring import calculate_artist_fit_score
 from app.db import SessionLocal
+from app.models import Prospect, ProspectType, Signal, SignalType
+from app.models.base import require_id
+from app.models.signal import Confidence, Importance
+from app.services.scoring import calculate_artist_fit_score
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class AdvancedArtistScorer:
     """Advanced scoring for artists based on market signals."""
 
     # Major art fairs targeting African contemporary art
-    MAJOR_FAIRS = {
+    MAJOR_FAIRS: dict[str, dict[str, Any]] = {
         "FIAC": {"country": "FR", "importance": 10},  # Foire Internationale d'Art Contemporain
         "Viva Africa": {"country": "INTL", "importance": 10},  # Major African art fair
         "Art Basel": {"country": "INTL", "importance": 9},
@@ -44,7 +44,7 @@ class AdvancedArtistScorer:
     }
 
     # Prestigious galleries (can be enriched from Artfacts API)
-    PRESTIGIOUS_GALLERIES = {
+    PRESTIGIOUS_GALLERIES: dict[str, dict[str, Any]] = {
         "Galerie Cécile Fakhoury": {"tier": "A", "points": 10},  # Dakar/Paris - major African rep
         "Goodman Gallery": {"tier": "A", "points": 10},  # Johannesburg/London
         "Thaddaeus Ropac": {"tier": "A", "points": 9},
@@ -58,7 +58,7 @@ class AdvancedArtistScorer:
     }
 
     # Major international art residencies
-    PRESTIGIOUS_RESIDENCIES = {
+    PRESTIGIOUS_RESIDENCIES: dict[str, dict[str, Any]] = {
         "Documenta": {"points": 10},
         "Venice Biennale": {"points": 10},
         "Berlin Biennial": {"points": 9},
@@ -72,7 +72,7 @@ class AdvancedArtistScorer:
     }
 
     # Awards & recognitions
-    PRESTIGIOUS_AWARDS = {
+    PRESTIGIOUS_AWARDS: dict[str, dict[str, Any]] = {
         "Hugo Boss Prize": {"points": 9},
         "Turner Prize": {"points": 9},
         "Golden Nica": {"points": 8},
@@ -97,7 +97,7 @@ class AdvancedArtistScorer:
 
         # Calculate bonuses
         bonus_breakdown = {}
-        total_bonus = 0
+        total_bonus = 0.0
 
         # 1. Major fair participation
         fair_bonus = self._detect_fair_participation(prospect)
@@ -199,11 +199,13 @@ class AdvancedArtistScorer:
 
             # For V1: Use engagement rate as proxy for growth health
             # This will be improved in V2 with follower tracking
-            logger.debug(f"Instagram growth analysis for {prospect.name}: placeholder (will improve in V2)")
+            logger.debug(
+                f"Instagram growth analysis for {prospect.name}: placeholder (will improve in V2)"
+            )
             bonus = 3  # Placeholder: modest bonus for having Instagram
 
         except Exception as e:
-            logger.warning(f"Error analyzing Instagram growth for {prospect.name}: {str(e)}")
+            logger.warning(f"Error analyzing Instagram growth for {prospect.name}: {e!s}")
             bonus = 0
 
         return bonus
@@ -228,7 +230,9 @@ class AdvancedArtistScorer:
                 bonus += gallery_info["points"]
                 detected_galleries.append(f"{gallery_name} ({gallery_info['tier']})")
 
-        logger.debug(f"Gallery detection for {prospect.name}: {detected_galleries} (bonus: +{bonus})")
+        logger.debug(
+            f"Gallery detection for {prospect.name}: {detected_galleries} (bonus: +{bonus})"
+        )
         return min(bonus, 10)  # Cap at 10 points
 
     def _detect_awards_residencies(self, prospect: Prospect) -> float:
@@ -255,7 +259,9 @@ class AdvancedArtistScorer:
                 bonus += award_info["points"]
                 detected_accolades.append(f"Award: {award_name}")
 
-        logger.debug(f"Awards/Residencies for {prospect.name}: {detected_accolades} (bonus: +{bonus})")
+        logger.debug(
+            f"Awards/Residencies for {prospect.name}: {detected_accolades} (bonus: +{bonus})"
+        )
         return min(bonus, 10)  # Cap at 10 points
 
     def _detect_media_mentions(self, prospect: Prospect) -> float:
@@ -290,10 +296,12 @@ class AdvancedArtistScorer:
         elif mention_count >= 1:
             bonus = 3  # Some media presence
 
-        logger.debug(f"Media mentions for {prospect.name}: {mention_count} keywords (bonus: +{bonus})")
+        logger.debug(
+            f"Media mentions for {prospect.name}: {mention_count} keywords (bonus: +{bonus})"
+        )
         return bonus
 
-    def bulk_rescore_artists(self) -> List[dict]:
+    def bulk_rescore_artists(self) -> list[dict]:
         """
         Re-score all artists with advanced scoring.
 
@@ -305,7 +313,7 @@ class AdvancedArtistScorer:
 
         logger.info(f"📊 Re-scoring {len(artists)} artists with advanced scoring...")
 
-        results = []
+        results: list[dict[str, Any]] = []
 
         for artist in artists:
             new_score, breakdown = self.calculate_enhanced_artist_score(artist)
@@ -325,13 +333,13 @@ class AdvancedArtistScorer:
                 # Generate signal if major upgrade
                 if score_change > 15:
                     signal = Signal(
-                        prospect_id=artist.id,
+                        prospect_id=require_id(artist),
                         signal_type=SignalType.NEW_PUBLICATION,
                         description=f"Advanced scoring: score improved from {old_score:.0f} to {new_score:.0f}. "
                         f"Bonuses: {breakdown['bonuses']}",
-                        signal_date=datetime.utcnow(),
-                        importance="MEDIUM",
-                        confidence="HIGH",
+                        signal_date=datetime.now(timezone.utc),
+                        importance=Importance.MEDIUM,
+                        confidence=Confidence.HIGH,
                     )
                     self.session.add(signal)
 

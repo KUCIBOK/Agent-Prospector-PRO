@@ -2,11 +2,11 @@
 Score model — stores fit scores and breakdowns.
 """
 
-from typing import Optional, Any
-
-from sqlmodel import Field, ForeignKey
-from sqlalchemy import JSON
 import enum
+from typing import Any
+
+from sqlalchemy import JSON
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -32,9 +32,9 @@ class Score(BaseModel, table=True):
         model_version: Which AI model computed this
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prospect_id: int = Field(foreign_key="prospect.id", index=True)
     score_type: ScoreType = Field(index=True)
     score: float = Field(ge=0.0, le=100.0)
-    breakdown: Optional[Any] = Field(default=None, sa_type=JSON)
+    breakdown: Any | None = Field(default=None, sa_type=JSON)
     model_version: str = Field(default="1.0")

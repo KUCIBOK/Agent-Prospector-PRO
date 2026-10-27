@@ -14,19 +14,22 @@ Rules:
 """
 
 import logging
-from typing import Optional, Dict, List
+from datetime import datetime, timezone
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 from sqlmodel import Session, select
 
-from app.models import Prospect, Message
+from app.models import Message, MessageChannel, MessageStatus, Prospect
+from app.models.base import require_id
+from app.services.outreach import detect_persona
 
 logger = logging.getLogger(__name__)
 
 
 class OfferPlanType(str, Enum):
     """Kucibok Bridge pricing plans."""
+
     CURATOR = "CURATOR"  # €21-49/month
     ADVISOR = "ADVISOR"  # €49-99/month
     ENTERPRISE = "ENTERPRISE"  # Custom pricing
@@ -34,6 +37,7 @@ class OfferPlanType(str, Enum):
 
 class OfferStage(str, Enum):
     """Where in the funnel the prospect is."""
+
     AFTER_DOSSIER = "AFTER_DOSSIER"  # They liked the dossier
     DIRECT_INQUIRY = "DIRECT_INQUIRY"  # They asked about the platform
 
@@ -58,8 +62,7 @@ class KucibokBridgeOffer:
     # After dossier - confirm interest
     AFTER_DOSSIER_VARIANTS = [
         """Bonjour {first_name}, ravi que le dossier vous ait plu. Pour info, il vient de notre catalogue Kucibok Bridge, qui compte aujourd'hui plus de 90 artistes d'Afrique de l'Ouest, vérifiés et classés par niveau de maturité. Si utile, je peux vous montrer comment ça fonctionne en 20 minutes, sans engagement.""",
-
-        """Bonjour {first_name}, merci pour votre retour. Ce dossier fait partie d'un catalogue plus large qu'on constitue à Dakar, avec un vrai travail de vérification terrain. Curieux de vous montrer ce qu'il y a derrière si ça vous intéresse — un appel rapide suffit."""
+        """Bonjour {first_name}, merci pour votre retour. Ce dossier fait partie d'un catalogue plus large qu'on constitue à Dakar, avec un vrai travail de vérification terrain. Curieux de vous montrer ce qu'il y a derrière si ça vous intéresse — un appel rapide suffit.""",
     ]
 
     # Direct inquiry about platform
@@ -68,7 +71,7 @@ class KucibokBridgeOffer:
     ]
 
     # Pricing plans
-    PLANS = {
+    PLANS: dict[OfferPlanType, dict[str, Any]] = {
         OfferPlanType.CURATOR: {
             "name": "Plan Curateur",
             "price_min": 21,
@@ -80,7 +83,7 @@ class KucibokBridgeOffer:
                 "Shortlist personnelle",
                 "Vérification terrain documentée",
                 "Mise à jour hebdomadaire des nouveaux profils",
-            ]
+            ],
         },
         OfferPlanType.ADVISOR: {
             "name": "Plan Conseiller",
@@ -93,7 +96,7 @@ class KucibokBridgeOffer:
                 "Gestion de portefeuille",
                 "Suivi commission",
                 "Support prioritaire",
-            ]
+            ],
         },
         OfferPlanType.ENTERPRISE: {
             "name": "Plan Enterprise",
@@ -106,24 +109,24 @@ class KucibokBridgeOffer:
                 "Intégrations personnalisées",
                 "Support dédié",
                 "Infrastructure sur mesure",
-            ]
-        }
+            ],
+        },
     }
 
     # Common objections & responses
     OBJECTIONS = {
         "small_catalog": {
             "trigger": "C'est encore petit",
-            "response": "Le catalogue grandit chaque semaine. Un catalogue vérifié de 90 profils vaut mieux qu'un annuaire de 1000 non vérifiés. Chaque artiste est documenté sur place."
+            "response": "Le catalogue grandit chaque semaine. Un catalogue vérifié de 90 profils vaut mieux qu'un annuaire de 1000 non vérifiés. Chaque artiste est documenté sur place.",
         },
         "certification": {
             "trigger": "Vous avez une certification",
-            "response": "La certification digitale est en construction. Aujourd'hui la vérification repose sur le travail terrain direct : photo, appel, visite avec chaque artiste. C'est plus robuste qu'un badge."
+            "response": "La certification digitale est en construction. Aujourd'hui la vérification repose sur le travail terrain direct : photo, appel, visite avec chaque artiste. C'est plus robuste qu'un badge.",
         },
         "pricing": {
             "trigger": "Quel est le prix",
-            "response": "Le Plan Curateur est en €21-49/mois. Je peux détailler selon votre besoin, mais commençons par une démo du catalogue."
-        }
+            "response": "Le Plan Curateur est en €21-49/mois. Je peux détailler selon votre besoin, mais commençons par une démo du catalogue.",
+        },
     }
 
     def __init__(self, session: Session):
@@ -132,7 +135,7 @@ class KucibokBridgeOffer:
     def detect_stage(
         self,
         prospect: Prospect,
-        context: Optional[str] = None,
+        context: str | None = None,
     ) -> OfferStage:
         """
         Detect which stage of funnel prospect is at.
@@ -160,7 +163,7 @@ class KucibokBridgeOffer:
     def generate_offer_message(
         self,
         prospect: Prospect,
-        stage: Optional[OfferStage] = None,
+        stage: OfferStage | None = None,
         variant_index: int = 0,
     ) -> str:
         """
@@ -204,7 +207,7 @@ class KucibokBridgeOffer:
 
         return message
 
-    def get_plan_description(self, plan_type: OfferPlanType) -> Dict:
+    def get_plan_description(self, plan_type: OfferPlanType) -> dict:
         """
         Get description of a pricing plan.
 
@@ -466,7 +469,7 @@ class KucibokBridgeOffer:
 
         return html
 
-    def validate_offer_message(self, message: str) -> Dict[str, bool]:
+    def validate_offer_message(self, message: str) -> dict[str, bool]:
         """
         Validate offer message against Kucibok Bridge rules.
 
@@ -482,7 +485,11 @@ class KucibokBridgeOffer:
             "has_concrètement": message.strip().startswith("Concrètement"),
             "mentions_unavailable_features": any(
                 phrase in message.lower()
-                for phrase in ["certification disponible", "logistique prête", "budget tracking live"]
+                for phrase in [
+                    "certification disponible",
+                    "logistique prête",
+                    "budget tracking live",
+                ]
             ),
         }
 
@@ -506,12 +513,13 @@ class KucibokBridgeOffer:
             Created Message record
         """
         msg = Message(
-            prospect_id=prospect.id,
-            type="KUCIBOK_BRIDGE_OFFER",
-            status="SENT",
-            subject=f"Kucibok Bridge — Plateforme de sourcing",
-            body=message,
-            sent_at=datetime.utcnow(),
+            prospect_id=require_id(prospect),
+            persona=detect_persona(prospect),
+            variant_label="KUCIBOK_BRIDGE_OFFER",
+            channel=MessageChannel.EMAIL,
+            status=MessageStatus.SENT,
+            content=f"Subject: Kucibok Bridge — Plateforme de sourcing\n\n{message}",
+            sent_at=datetime.now(timezone.utc),
         )
 
         self.session.add(msg)

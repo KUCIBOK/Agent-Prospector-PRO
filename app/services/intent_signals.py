@@ -10,12 +10,12 @@ Detects:
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, List
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
-from app.models import Prospect, Signal, SignalType
+
 from app.db import SessionLocal
+from app.models import Prospect, Signal
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +48,13 @@ class IntentSignalDetector:
         logger.info(f"✅ Intent detection complete: {signal_count} signals detected")
         return signal_count
 
-    def detect_prospect_signals(self, prospect: Prospect) -> List[Signal]:
+    def detect_prospect_signals(self, prospect: Prospect) -> list[Signal]:
         """
         Detect signals for a single prospect.
 
         Returns list of new signals.
         """
-        signals = []
+        signals: list[Signal] = []
 
         # 1. LinkedIn changes (title, new recruits, endorsements)
         linkedin_signals = self._check_linkedin_changes(prospect)
@@ -81,14 +81,14 @@ class IntentSignalDetector:
 
         return signals
 
-    def _check_linkedin_changes(self, prospect: Prospect) -> List[Signal]:
+    def _check_linkedin_changes(self, prospect: Prospect) -> list[Signal]:
         """
         Check for LinkedIn profile changes (title, role, endorsements).
 
         In production: scrape/monitor LinkedIn profile updates.
         For now: placeholder for integration with LinkedIn API or webhooks.
         """
-        signals = []
+        signals: list[Signal] = []
 
         if not prospect.linkedin:
             return signals
@@ -105,9 +105,9 @@ class IntentSignalDetector:
                 signal_type=SignalType.CAREER_CHANGE,
                 description=f"Title changed to: {profile_data['title']}",
                 source_url=prospect.linkedin,
-                signal_date=datetime.utcnow(),
-                importance="HIGH",
-                confidence="HIGH"
+                signal_date=datetime.now(timezone.utc),
+                importance=Importance.HIGH,
+                confidence=Confidence.HIGH
             )
             signals.append(signal)
 
@@ -118,22 +118,22 @@ class IntentSignalDetector:
                 signal_type=SignalType.HIRING_SPREE,
                 description=f"{len(profile_data['recent_company_hires'])} new hires in {profile_data['company']} recently",
                 source_url=prospect.linkedin,
-                signal_date=datetime.utcnow(),
-                importance="MEDIUM",
-                confidence="MEDIUM"
+                signal_date=datetime.now(timezone.utc),
+                importance=Importance.MEDIUM,
+                confidence=Confidence.MEDIUM
             )
             signals.append(signal)
         """
 
         return signals
 
-    def _check_africa_exhibitions(self, prospect: Prospect) -> List[Signal]:
+    def _check_africa_exhibitions(self, prospect: Prospect) -> list[Signal]:
         """
         Check for recent exhibitions with Africa theme.
 
         In production: scrape Artfacts, Artnet, gallery websites, press releases.
         """
-        signals = []
+        signals: list[Signal] = []
 
         # TODO: Integrate with exhibition APIs or scraping
         # Placeholder framework:
@@ -151,22 +151,22 @@ class IntentSignalDetector:
                     signal_type=SignalType.AFRICA_EXHIBITION,
                     description=f"Upcoming exhibition: {expo['title']} ({expo['venue']})",
                     source_url=expo['url'],
-                    signal_date=datetime.utcnow(),
-                    importance="HIGH",
-                    confidence="HIGH"
+                    signal_date=datetime.now(timezone.utc),
+                    importance=Importance.HIGH,
+                    confidence=Confidence.HIGH
                 )
                 signals.append(signal)
         """
 
         return signals
 
-    def _check_hiring_signals(self, prospect: Prospect) -> List[Signal]:
+    def _check_hiring_signals(self, prospect: Prospect) -> list[Signal]:
         """
         Check for job postings for curator/advisor roles in prospect's org.
 
         In production: scrape LinkedIn Jobs, Indeed, Artsy Jobs, Idealist.org
         """
-        signals = []
+        signals: list[Signal] = []
 
         # TODO: Integrate with job posting APIs
         """
@@ -183,22 +183,22 @@ class IntentSignalDetector:
                     signal_type=SignalType.HIRING_CURATOR,
                     description=f"Open position: {job['title']}",
                     source_url=job['url'],
-                    signal_date=datetime.utcnow(),
-                    importance="HIGH",
-                    confidence="HIGH"
+                    signal_date=datetime.now(timezone.utc),
+                    importance=Importance.HIGH,
+                    confidence=Confidence.HIGH
                 )
                 signals.append(signal)
         """
 
         return signals
 
-    def _check_gallery_expansion(self, prospect: Prospect) -> List[Signal]:
+    def _check_gallery_expansion(self, prospect: Prospect) -> list[Signal]:
         """
         Check for gallery expansion, relocation, or new artist representation.
 
         In production: scrape Artnet, Artfacts, gallery websites, press releases.
         """
-        signals = []
+        signals: list[Signal] = []
 
         # TODO: Integrate with gallery database and press monitoring
         """
@@ -216,9 +216,9 @@ class IntentSignalDetector:
                     signal_type=SignalType.GALLERY_EXPANSION,
                     description=news['title'],
                     source_url=news['url'],
-                    signal_date=datetime.utcnow(),
-                    importance="MEDIUM",
-                    confidence="MEDIUM"
+                    signal_date=datetime.now(timezone.utc),
+                    importance=Importance.MEDIUM,
+                    confidence=Confidence.MEDIUM
                 )
                 signals.append(signal)
         """
@@ -233,11 +233,10 @@ class IntentSignalDetector:
         """
         from app.models import Priority
 
-        cutoff = datetime.utcnow() - timedelta(days=7)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
         recent_signals = self.session.exec(
             select(Signal).where(
-                (Signal.prospect_id == prospect.id)
-                & (Signal.signal_date >= cutoff)
+                (Signal.prospect_id == prospect.id) & (Signal.signal_date >= cutoff)
             )
         ).all()
 

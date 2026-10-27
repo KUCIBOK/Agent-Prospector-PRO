@@ -6,13 +6,7 @@ from app.models import (
     Prospect,
     ProspectType,
     ProspectStatus,
-    Source,
-    SourceType,
-    Signal,
-    SignalType,
-    Importance,
 )
-from datetime import datetime
 
 # Test artists data
 TEST_ARTISTS = [
@@ -47,6 +41,7 @@ TEST_CURATORS = [
         "description": "Parisian gallery specialized in African contemporary art",
     },
 ]
+
 
 def create_test_data():
     """Create sample test data in the database."""
@@ -99,6 +94,7 @@ def create_test_data():
         session.commit()
         print()
         print("Test data created successfully!")
+
 
 if __name__ == "__main__":
     create_test_data()

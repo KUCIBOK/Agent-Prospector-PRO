@@ -17,16 +17,16 @@ Respects:
 """
 
 import logging
-import time
-from datetime import datetime
-from typing import Optional
-from urllib.parse import urljoin, urlparse
 import re
+import time
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+from urllib.robotparser import RobotFileParser
 
 import requests
 from bs4 import BeautifulSoup
 
-from app.models import Prospect, Source, SourceType
+from app.models import Prospect
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +34,12 @@ logger = logging.getLogger(__name__)
 class CrawlResult:
     """Result of crawling a website."""
 
-    def __init__(self, url: str, status: str, data: dict = None, error: str = None):
+    def __init__(self, url: str, status: str, data: dict | None = None, error: str | None = None):
         self.url = url
         self.status = status  # SUCCESS, ERROR, TIMEOUT, ROBOTS_TXT
         self.data = data or {}
         self.error = error
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(timezone.utc)
 
     def __repr__(self):
         return f"<CrawlResult {self.url} {self.status}>"
@@ -50,9 +50,7 @@ class Crawler:
 
     def __init__(self):
         self.session = requests.Session()
-        self.headers = {
-            "User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"
-        }
+        self.headers = {"User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"}
         self.session.headers.update(self.headers)
         self.timeout = 30
         self.last_request_time = {}  # Track per-domain rate limiting
@@ -66,30 +64,28 @@ class Crawler:
         self.last_request_time[domain] = time.time()
 
     def _check_robots_txt(self, url: str) -> bool:
-        """Check if URL is allowed by robots.txt."""
+        """Check if URL is allowed by robots.txt (per-agent rules, wildcards)."""
         try:
             parsed = urlparse(url)
-            domain = parsed.netloc
-            robots_url = f"{parsed.scheme}://{domain}/robots.txt"
+            robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
 
             response = self.session.get(robots_url, timeout=5)
-            if response.status_code == 200:
-                robots_text = response.text.lower()
-                path = parsed.path or "/"
+            if response.status_code in (401, 403):
+                logger.warning(f"robots.txt access denied, skipping: {parsed.netloc}")
+                return False
+            if response.status_code != 200:
+                return True  # No robots.txt: everything is allowed
 
-                # Simple check (doesn't parse all robots.txt syntax)
-                if "disallow: /" in robots_text:
-                    logger.warning(f"robots.txt disallows all: {domain}")
-                    return False
-
-                if f"disallow: {path}" in robots_text:
-                    logger.warning(f"robots.txt disallows path: {path}")
-                    return False
-
+            parser = RobotFileParser()
+            parser.parse(response.text.splitlines())
+            agent = self.session.headers.get("User-Agent", "*")
+            if not parser.can_fetch(agent, url):
+                logger.warning(f"robots.txt disallows: {url}")
+                return False
             return True
 
         except Exception as e:
-            logger.warning(f"Could not check robots.txt: {str(e)}")
+            logger.warning(f"Could not check robots.txt: {e!s}")
             return True  # Assume allowed if error
 
     def crawl_website(self, url: str) -> CrawlResult:
@@ -153,7 +149,7 @@ class Crawler:
             data["phones"] = list(phones)[:3]
 
             # Social media links
-            social_media = {
+            social_media: dict[str, str | None] = {
                 "instagram": None,
                 "linkedin": None,
                 "facebook": None,
@@ -162,7 +158,7 @@ class Crawler:
 
             links = soup.find_all("a", href=True)
             for link in links:
-                href = link.get("href", "").lower()
+                href = str(link.get("href") or "").lower()
                 if "instagram.com" in href and not social_media["instagram"]:
                     social_media["instagram"] = href
                 elif "linkedin.com" in href and not social_media["linkedin"]:
@@ -177,7 +173,7 @@ class Crawler:
             # Extract about/bio (look for common sections)
             about_text = ""
             for tag_name in ["about", "bio", "artist-statement", "statement"]:
-                element = soup.find(id=re.compile(tag_name, re.I))
+                element = soup.find(id=re.compile(tag_name, re.IGNORECASE))
                 if element:
                     about_text = element.get_text()[:500]
                     break
@@ -192,11 +188,11 @@ class Crawler:
             return CrawlResult(url, "TIMEOUT", error="Request timeout (30s)")
 
         except requests.RequestException as e:
-            logger.error(f"Request error: {url} — {str(e)}")
+            logger.error(f"Request error: {url} — {e!s}")
             return CrawlResult(url, "ERROR", error=str(e))
 
         except Exception as e:
-            logger.error(f"Crawl error: {url} — {str(e)}")
+            logger.error(f"Crawl error: {url} — {e!s}")
             return CrawlResult(url, "ERROR", error=str(e))
 
     def crawl_instagram(self, handle: str) -> CrawlResult:

@@ -13,13 +13,12 @@ Data sources (free):
 """
 
 import logging
-from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Session, select
-import requests
 
-from app.models import Prospect, ProspectType, ProspectStatus, Source, SourceType
+from app.models import Prospect, ProspectStatus, ProspectType, Source, SourceType
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 class SearchQuery:
     """Search query builder."""
 
-    def __init__(self, target_type: ProspectType, keywords: list, countries: list = None):
+    def __init__(self, target_type: ProspectType, keywords: list, countries: list | None = None):
         self.target_type = target_type
         self.keywords = keywords
         self.countries = countries or []
@@ -80,11 +79,9 @@ class DiscoveryEngine:
 
     def __init__(self, session: Session):
         self.session = session
-        self.headers = {
-            "User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"
-        }
+        self.headers = {"User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"}
 
-    def generate_artist_searches(self, countries: list = None) -> list[SearchQuery]:
+    def generate_artist_searches(self, countries: list | None = None) -> list[SearchQuery]:
         """Generate artist discovery queries."""
         if countries is None:
             countries = ["Senegal", "Nigeria", "Kenya", "South Africa", "Morocco"]
@@ -154,7 +151,7 @@ class DiscoveryEngine:
 
         # For now, return empty (would need API key)
         # In production, integrate with SerpAPI or Selenium
-        results = []
+        results: list[dict] = []
 
         # Placeholder: Would make real API call here
         # url = f"https://www.google.com/search?q={query}"
@@ -179,10 +176,10 @@ class DiscoveryEngine:
         # client = Client()
         # results = client.hashtag_medias_recent_v2(hashtag)
 
-        results = []
+        results: list[dict] = []
         return results
 
-    def search_artfacts(self, keywords: list, country: str = None) -> list[dict]:
+    def search_artfacts(self, keywords: list, country: str | None = None) -> list[dict]:
         """
         Search artfacts.net for artists.
 
@@ -194,7 +191,7 @@ class DiscoveryEngine:
         # This is a public directory, scraping is typically allowed
         # but should respect rate limits
 
-        results = []
+        results: list[dict] = []
         return results
 
     def create_prospect_from_result(
@@ -202,11 +199,11 @@ class DiscoveryEngine:
         name: str,
         prospect_type: ProspectType,
         country: str,
-        website: Optional[str] = None,
-        instagram: Optional[str] = None,
-        description: Optional[str] = None,
-        source_url: Optional[str] = None,
-    ) -> Optional[Prospect]:
+        website: str | None = None,
+        instagram: str | None = None,
+        description: str | None = None,
+        source_url: str | None = None,
+    ) -> Prospect | None:
         """
         Create or update prospect from search result.
 
@@ -239,11 +236,11 @@ class DiscoveryEngine:
         # Add source
         if source_url:
             source = Source(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 url=source_url,
                 source_type=SourceType.WEBSITE,
                 title=f"Discovery: {name}",
-                captured_at=datetime.utcnow(),
+                captured_at=datetime.now(timezone.utc),
             )
             self.session.add(source)
             self.session.commit()
@@ -251,7 +248,7 @@ class DiscoveryEngine:
         logger.info(f"✅ Created prospect: {prospect.name} (ID: {prospect.id})")
         return prospect
 
-    def discover_artists(self, countries: list = None, limit: int = 50) -> dict:
+    def discover_artists(self, countries: list | None = None, limit: int = 50) -> dict:
         """
         Discover artists.
 
@@ -290,17 +287,19 @@ class DiscoveryEngine:
                             break
 
                     except Exception as e:
-                        logger.error(f"Error creating prospect: {str(e)}")
+                        logger.error(f"Error creating prospect: {e!s}")
                         errors += 1
 
                 if discovered >= limit:
                     break
 
             except Exception as e:
-                logger.error(f"Error in artist discovery: {str(e)}")
+                logger.error(f"Error in artist discovery: {e!s}")
                 errors += 1
 
-        logger.info(f"✅ Artist discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors")
+        logger.info(
+            f"✅ Artist discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors"
+        )
         return {
             "discovered": discovered,
             "duplicates": duplicates,
@@ -344,17 +343,19 @@ class DiscoveryEngine:
                             break
 
                     except Exception as e:
-                        logger.error(f"Error creating prospect: {str(e)}")
+                        logger.error(f"Error creating prospect: {e!s}")
                         errors += 1
 
                 if discovered >= limit:
                     break
 
             except Exception as e:
-                logger.error(f"Error in client discovery: {str(e)}")
+                logger.error(f"Error in client discovery: {e!s}")
                 errors += 1
 
-        logger.info(f"✅ Client discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors")
+        logger.info(
+            f"✅ Client discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors"
+        )
         return {
             "discovered": discovered,
             "duplicates": duplicates,

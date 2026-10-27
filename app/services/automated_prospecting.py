@@ -12,20 +12,18 @@ Features:
 """
 
 import logging
-from datetime import datetime
-from typing import List, Optional
-import time
+from datetime import datetime, timezone
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.models import (
     Prospect,
-    ProspectType,
     ProspectStatus,
-    Message,
+    ProspectType,
     Source,
     SourceType,
 )
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +33,9 @@ class AutomatedProspectingConfig:
 
     def __init__(
         self,
-        target_countries: List[str],
-        target_types: List[ProspectType],
-        search_keywords: List[str],
+        target_countries: list[str],
+        target_types: list[ProspectType],
+        search_keywords: list[str],
         offer_type: str = "SOURCING_AND_VETTING",
         daily_limit: int = 50,
         scrape_hour: int = 3,  # 3 AM
@@ -58,7 +56,7 @@ class AutomatedProspectingEngine:
         self.config = config
         self.logger = logger
 
-    def generate_linkedin_search_queries(self) -> List[str]:
+    def generate_linkedin_search_queries(self) -> list[str]:
         """Generate LinkedIn search queries for each country."""
         queries = []
 
@@ -79,32 +77,38 @@ class AutomatedProspectingEngine:
             country_name = country_names.get(country_code, country_code)
 
             # Curator queries
-            queries.extend([
-                f"curator {country_name} contemporary art",
-                f"art curator {country_name} African artists",
-                f"curator {country_name} emerging artists",
-                f"contemporary art curator {country_name}",
-            ])
+            queries.extend(
+                [
+                    f"curator {country_name} contemporary art",
+                    f"art curator {country_name} African artists",
+                    f"curator {country_name} emerging artists",
+                    f"contemporary art curator {country_name}",
+                ]
+            )
 
             # Advisor queries
-            queries.extend([
-                f"art advisor {country_name}",
-                f"art advisor {country_name} African art",
-                f"art consultant {country_name} contemporary",
-                f"art advisor {country_name} emerging markets",
-            ])
+            queries.extend(
+                [
+                    f"art advisor {country_name}",
+                    f"art advisor {country_name} African art",
+                    f"art consultant {country_name} contemporary",
+                    f"art advisor {country_name} emerging markets",
+                ]
+            )
 
             # Gallery queries
-            queries.extend([
-                f"gallery {country_name} contemporary art",
-                f"art gallery {country_name} African",
-                f"gallery director {country_name}",
-            ])
+            queries.extend(
+                [
+                    f"gallery {country_name} contemporary art",
+                    f"art gallery {country_name} African",
+                    f"gallery director {country_name}",
+                ]
+            )
 
         logger.info(f"Generated {len(queries)} LinkedIn search queries")
         return queries
 
-    def generate_instagram_hashtags(self) -> List[str]:
+    def generate_instagram_hashtags(self) -> list[str]:
         """Generate Instagram hashtags to scrape."""
         hashtags = [
             "curator",
@@ -131,7 +135,7 @@ class AutomatedProspectingEngine:
         logger.info(f"Generated {len(hashtags)} Instagram hashtags")
         return hashtags
 
-    def scrape_linkedin_profiles(self, queries: List[str]) -> List[dict]:
+    def scrape_linkedin_profiles(self, queries: list[str]) -> list[dict]:
         """
         Scrape LinkedIn profiles for curators/advisors.
 
@@ -145,11 +149,9 @@ class AutomatedProspectingEngine:
         - Apollo.io (professional email finder)
         - Hunter.io (email finder)
         """
-        results = []
+        results: list[dict] = []
 
-        logger.warning(
-            "⚠️  LinkedIn scraping requires official API or paid service"
-        )
+        logger.warning("⚠️  LinkedIn scraping requires official API or paid service")
         logger.info("Recommended: Apollo.io, Hunter.io, or LinkedIn Recruiter API")
 
         # Placeholder: Would integrate with API here
@@ -159,7 +161,7 @@ class AutomatedProspectingEngine:
 
         return results
 
-    def scrape_instagram_profiles(self, hashtags: List[str]) -> List[dict]:
+    def scrape_instagram_profiles(self, hashtags: list[str]) -> list[dict]:
         """
         Scrape Instagram profiles using hashtags.
 
@@ -172,11 +174,9 @@ class AutomatedProspectingEngine:
         - Get Business account verification
         - Request API access from Meta
         """
-        results = []
+        results: list[dict] = []
 
-        logger.warning(
-            "⚠️  Instagram scraping requires official Graph API"
-        )
+        logger.warning("⚠️  Instagram scraping requires official Graph API")
         logger.info("Setup: Meta Business Account → Instagram Business → Graph API")
 
         # Placeholder: Would use instagrapi or Graph API here
@@ -186,17 +186,15 @@ class AutomatedProspectingEngine:
 
         return results
 
-    def scrape_google_search_results(self, keywords: List[str]) -> List[dict]:
+    def scrape_google_search_results(self, keywords: list[str]) -> list[dict]:
         """
         Scrape Google Search for prospects.
 
         Uses SerpAPI or similar service (legal + reliable).
         """
-        results = []
+        results: list[dict] = []
 
-        logger.info(
-            f"🔍 Scraping Google Search for {len(keywords)} keywords"
-        )
+        logger.info(f"🔍 Scraping Google Search for {len(keywords)} keywords")
 
         # Placeholder: Would use SerpAPI here
         # for keyword in keywords:
@@ -216,18 +214,20 @@ class AutomatedProspectingEngine:
         name: str,
         prospect_type: ProspectType,
         country: str,
-        website: Optional[str] = None,
-        description: Optional[str] = None,
-        source_url: Optional[str] = None,
+        website: str | None = None,
+        description: str | None = None,
+        source_url: str | None = None,
         source_type: SourceType = SourceType.WEBSITE,
-    ) -> Optional[Prospect]:
+    ) -> Prospect | None:
         """Create prospect from scraped data."""
         try:
             # Check for duplicates
             from sqlmodel import select
+
             existing = self.session.exec(
                 select(Prospect).where(Prospect.name == name)
-                if name else select(Prospect).where(Prospect.name == "UNKNOWN")
+                if name
+                else select(Prospect).where(Prospect.name == "UNKNOWN")
             ).first()
 
             if existing:
@@ -250,11 +250,11 @@ class AutomatedProspectingEngine:
             # Add source
             if source_url:
                 source = Source(
-                    prospect_id=prospect.id,
+                    prospect_id=require_id(prospect),
                     url=source_url,
                     source_type=source_type,
                     title="Auto-scraped",
-                    captured_at=datetime.utcnow(),
+                    captured_at=datetime.now(timezone.utc),
                 )
                 self.session.add(source)
                 self.session.commit()
@@ -263,7 +263,7 @@ class AutomatedProspectingEngine:
             return prospect
 
         except Exception as e:
-            logger.error(f"Error creating prospect: {str(e)}")
+            logger.error(f"Error creating prospect: {e!s}")
             return None
 
     def run_daily_scraping(self) -> dict:
@@ -283,8 +283,11 @@ class AutomatedProspectingEngine:
         # Generate queries
         linkedin_queries = self.generate_linkedin_search_queries()
         instagram_hashtags = self.generate_instagram_hashtags()
-        google_keywords = [q + " " + country for q in self.config.search_keywords
-                          for country in self.config.target_countries]
+        google_keywords = [
+            q + " " + country
+            for q in self.config.search_keywords
+            for country in self.config.target_countries
+        ]
 
         # Scrape (placeholders)
         linkedin_results = self.scrape_linkedin_profiles(linkedin_queries)
@@ -298,12 +301,16 @@ class AutomatedProspectingEngine:
         duplicates = 0
         errors = 0
 
-        for i, result in enumerate(all_results[:self.config.daily_limit]):
+        for i, result in enumerate(all_results[: self.config.daily_limit]):
             try:
+                if not result.get("name") or not result.get("country"):
+                    logger.warning(f"Skipping result {i}: missing name or country")
+                    errors += 1
+                    continue
                 prospect = self.create_prospect_from_scraped_data(
-                    name=result.get("name"),
+                    name=result["name"],
                     prospect_type=result.get("type", ProspectType.CURATOR),
-                    country=result.get("country"),
+                    country=result["country"],
                     website=result.get("url"),
                     description=result.get("description"),
                     source_url=result.get("url"),
@@ -315,7 +322,7 @@ class AutomatedProspectingEngine:
                     duplicates += 1
 
             except Exception as e:
-                logger.error(f"Error processing result {i}: {str(e)}")
+                logger.error(f"Error processing result {i}: {e!s}")
                 errors += 1
 
         logger.info(
@@ -427,7 +434,6 @@ class AutomatedProspectingEngine:
 
         Only sends to P1-P2 prospects (high confidence).
         """
-        from app.services.email_service import EmailService
 
         logger.info("📧 Sending outreach emails to new prospects...")
 
@@ -435,7 +441,7 @@ class AutomatedProspectingEngine:
         prospects = self.session.exec(
             select(Prospect)
             .where(Prospect.status == ProspectStatus.IDENTIFIED)
-            .where(Prospect.email.isnot(None))
+            .where(col(Prospect.email).isnot(None))
             .limit(100)
         ).all()
 
@@ -458,7 +464,7 @@ class AutomatedProspectingEngine:
                 sent += 1
 
             except Exception as e:
-                logger.error(f"Error sending email to {prospect.name}: {str(e)}")
+                logger.error(f"Error sending email to {prospect.name}: {e!s}")
                 failed += 1
 
         logger.info(f"✅ Email sending complete: {sent} sent, {failed} failed")
