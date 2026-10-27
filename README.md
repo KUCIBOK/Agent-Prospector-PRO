@@ -21,6 +21,16 @@ All fully automated, running 24/7 on your infrastructure.
 
 ---
 
+## ⚠️ Known limitations
+
+- **Prototype, not production-ready.** `docker-compose.yml` is not in the repository yet, so the Quick Start below cannot be run as written.
+- **Deep Source discovery is a placeholder.** `scrape_google_search()` returns no results until a search provider (SearxNG, SerpAPI, ...) is connected.
+- **No measured funnel results.** Figures such as reply rates or revenue per batch were hypotheses and have been removed. Do not rely on them.
+- **Authentication:** all `/api` routes require an `X-API-Key` header matching the `API_KEY` environment variable. Set it before exposing the service.
+- **Secrets:** never commit `.env*` files. Only `.env.example` is tracked.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites

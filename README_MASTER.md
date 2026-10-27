@@ -333,7 +333,7 @@ After reading this guide and launching:
 
 ---
 
-## ✅ Production Ready?
+## ✅ Production Ready? (not yet — see README.md "Known limitations")
 
 - [x] Code complete & tested
 - [x] Services integrated
@@ -369,7 +369,6 @@ After reading this guide and launching:
 
 **Week 4:**
 - Day 22-30: First customer onboarded ✅
-- Revenue: €5K-30K
 - Next batch: 50 more prospects
 
 ---
@@ -377,10 +376,8 @@ After reading this guide and launching:
 ## 🌟 Highlights
 
 **Deep Source:**
-- 50 curators found in minutes
-- 96% have emails
-- 100% have verified websites
-- All P1-P2 hot prospects
+- Deep Source discovery is a placeholder: no search provider is wired yet
+- No measured email or website rates exist yet
 
 **Playbook 1:**
 - 5 variants (not copy-paste)
@@ -397,7 +394,6 @@ After reading this guide and launching:
 **Funnel:**
 - 50 prospects → 4-5 replies → 2-3 demos → 1 customer
 - 30-day conversion cycle
-- €50K-100K revenue per batch
 
 ---
 
@@ -441,7 +437,7 @@ Start with **[SESSION_SUMMARY.md](./SESSION_SUMMARY.md)** — 5 minutes to under
 
 ---
 
-**Status**: ✅ **PRODUCTION READY**  
+**Status**: ⚠️ Prototype — see "Known limitations" in README.md  
 **Date**: August 24, 2026  
 **Version**: 2.0 (Deep Source + 2 Playbooks)  
 

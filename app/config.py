@@ -111,6 +111,7 @@ class Settings(BaseSettings):
     # ========================================================================
     # Security
     # ========================================================================
+    api_key: str = os.getenv("API_KEY", "")
     cors_origins_str: str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
     allowed_hosts_str: str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
 

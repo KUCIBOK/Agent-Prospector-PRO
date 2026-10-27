@@ -5,10 +5,11 @@ Kucibok Prospector — FastAPI main application.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.security import require_api_key
 
 # Configure logging
 logging.basicConfig(
@@ -54,9 +55,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 
@@ -112,9 +113,15 @@ from app.api import prospects_router, messages_router, monitoring_router
 from fastapi.responses import FileResponse
 import os
 
-app.include_router(prospects_router, prefix="/api", tags=["prospects"])
-app.include_router(messages_router, prefix="/api", tags=["messages"])
-app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
+app.include_router(
+    prospects_router, prefix="/api", tags=["prospects"], dependencies=[Depends(require_api_key)]
+)
+app.include_router(
+    messages_router, prefix="/api", tags=["messages"], dependencies=[Depends(require_api_key)]
+)
+app.include_router(
+    monitoring_router, prefix="/api", tags=["monitoring"], dependencies=[Depends(require_api_key)]
+)
 
 # Base directory for static files (extracted to avoid duplication)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

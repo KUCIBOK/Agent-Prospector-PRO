@@ -4,6 +4,7 @@ import pytest
 from sqlmodel import create_engine, Session, SQLModel
 from sqlmodel.pool import StaticPool
 
+from app.config import settings
 from app.db import get_session
 from app.main import app
 
@@ -22,15 +23,16 @@ def session_fixture():
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: Session):
+def client_fixture(session: Session, monkeypatch):
     """FastAPI test client with mocked database."""
 
     def get_session_override():
         return session
 
     app.dependency_overrides[get_session] = get_session_override
+    monkeypatch.setattr(settings, "api_key", "test-key")
     from fastapi.testclient import TestClient
 
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-API-Key": "test-key"})
     yield client
     app.dependency_overrides.clear()
