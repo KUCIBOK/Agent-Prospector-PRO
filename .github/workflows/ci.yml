@@ -18,9 +18,7 @@ jobs:
       - run: black --check app
       - run: isort --check-only app
       - run: ruff check app
-      # Baseline of known type errors; report-only until they are fixed
       - run: mypy app
-        continue-on-error: true
 
   test:
     runs-on: ubuntu-latest

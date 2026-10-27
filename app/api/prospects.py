@@ -5,8 +5,7 @@ Prospect routes — CRUD operations and discovery.
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlmodel import func, select
+from sqlmodel import Session, col, func, select
 
 from app.db import get_session
 from app.models import Priority, Prospect, ProspectStatus, ProspectType
@@ -55,10 +54,10 @@ def list_prospects(
     if priority:
         query = query.where(Prospect.priority == priority)
     if country:
-        query = query.where(Prospect.country.ilike(f"%{country}%"))
+        query = query.where(col(Prospect.country).ilike(f"%{country}%"))
     if search:
         query = query.where(
-            (Prospect.name.ilike(f"%{search}%")) | (Prospect.email.ilike(f"%{search}%"))
+            (col(Prospect.name).ilike(f"%{search}%")) | (col(Prospect.email).ilike(f"%{search}%"))
         )
 
     # Count total
@@ -165,7 +164,7 @@ def delete_prospect(prospect_id: int, session: Session = Depends(get_session)) -
 def stats_by_type(session: Session = Depends(get_session)):
     """Get prospect counts by type."""
     types = session.exec(
-        select(Prospect.type, func.count(Prospect.id)).group_by(Prospect.type)
+        select(Prospect.type, func.count(col(Prospect.id))).group_by(Prospect.type)
     ).all()
 
     return {"by_type": {str(t): count for t, count in types}}
@@ -175,7 +174,7 @@ def stats_by_type(session: Session = Depends(get_session)):
 def stats_by_priority(session: Session = Depends(get_session)):
     """Get prospect counts by priority."""
     priorities = session.exec(
-        select(Prospect.priority, func.count(Prospect.id)).group_by(Prospect.priority)
+        select(Prospect.priority, func.count(col(Prospect.id))).group_by(Prospect.priority)
     ).all()
 
     return {"by_priority": {str(p): count for p, count in priorities if p}}

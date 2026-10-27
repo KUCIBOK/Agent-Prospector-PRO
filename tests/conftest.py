@@ -1,7 +1,7 @@
 """Pytest configuration and fixtures."""
 
 import pytest
-from sqlmodel import create_engine, Session, SQLModel
+from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from app.config import settings

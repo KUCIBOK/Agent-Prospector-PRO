@@ -5,14 +5,17 @@ Celery tasks — background jobs for discovery, enrichment, scoring, etc.
 import logging
 from datetime import datetime, timezone
 
+from sqlmodel import col
+
 from app.db import SessionLocal
 from app.models import Job, JobError, JobStatus, JobType
+from app.models.base import require_id
 from app.workers.celery_app import app
 
 logger = logging.getLogger(__name__)
 
 
-def log_job_error(job_id: int, error_msg: str, stack_trace: str = None) -> None:
+def log_job_error(job_id: int, error_msg: str, stack_trace: str | None = None) -> None:
     """Helper to log job errors."""
     session = SessionLocal()
     try:
@@ -358,7 +361,7 @@ def run_discovery(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
         raise self.retry(exc=exc, countdown=60) from exc
 
@@ -401,7 +404,7 @@ def run_crawling(self) -> dict:
         # Get prospects with websites to crawl
         prospects = session.exec(
             select(Prospect)
-            .where(Prospect.website.isnot(None))
+            .where(col(Prospect.website).isnot(None))
             .where(Prospect.status == ProspectStatus.IDENTIFIED)
             .limit(50)
         ).all()
@@ -444,7 +447,7 @@ def run_crawling(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
         raise self.retry(exc=exc, countdown=60) from exc
 
@@ -503,7 +506,7 @@ def run_enrichment(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
         raise self.retry(exc=exc, countdown=60) from exc
 
@@ -594,7 +597,7 @@ def run_scoring(self) -> dict:
 
                 # Store score
                 score_record = Score(
-                    prospect_id=prospect.id,
+                    prospect_id=require_id(prospect),
                     score_type=score_type,
                     score=score,
                     breakdown=breakdown,
@@ -611,7 +614,7 @@ def run_scoring(self) -> dict:
 
                     for variant in variants:
                         message = Message(
-                            prospect_id=prospect.id,
+                            prospect_id=require_id(prospect),
                             persona=variant["persona"],
                             variant_label=variant["variant_label"],
                             content=variant["content"],
@@ -648,7 +651,7 @@ def run_scoring(self) -> dict:
             job.error_message = str(exc)
             session.add(job)
             session.commit()
-            log_job_error(job.id, str(exc))
+            log_job_error(require_id(job), str(exc))
 
         raise self.retry(exc=exc, countdown=60) from exc
 

@@ -93,6 +93,5 @@ ignore = ["B008", "E501"]
 python_version = "3.11"
 warn_unused_configs = true
 ignore_missing_imports = true
-# Baseline: ~170 existing type errors (mostly SQLModel column expressions and
-# untyped defs). CI reports them without failing; tighten gradually.
+# mypy passes with untyped defs allowed; turn this on once annotations are complete.
 disallow_untyped_defs = false

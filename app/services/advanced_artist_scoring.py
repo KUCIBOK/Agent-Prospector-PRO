@@ -13,11 +13,14 @@ Result: Better identification of truly professional, market-ready artists.
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlmodel import Session, select
 
 from app.db import SessionLocal
 from app.models import Prospect, ProspectType, Signal, SignalType
+from app.models.base import require_id
+from app.models.signal import Confidence, Importance
 from app.services.scoring import calculate_artist_fit_score
 
 logger = logging.getLogger(__name__)
@@ -27,7 +30,7 @@ class AdvancedArtistScorer:
     """Advanced scoring for artists based on market signals."""
 
     # Major art fairs targeting African contemporary art
-    MAJOR_FAIRS = {
+    MAJOR_FAIRS: dict[str, dict[str, Any]] = {
         "FIAC": {"country": "FR", "importance": 10},  # Foire Internationale d'Art Contemporain
         "Viva Africa": {"country": "INTL", "importance": 10},  # Major African art fair
         "Art Basel": {"country": "INTL", "importance": 9},
@@ -41,7 +44,7 @@ class AdvancedArtistScorer:
     }
 
     # Prestigious galleries (can be enriched from Artfacts API)
-    PRESTIGIOUS_GALLERIES = {
+    PRESTIGIOUS_GALLERIES: dict[str, dict[str, Any]] = {
         "Galerie Cécile Fakhoury": {"tier": "A", "points": 10},  # Dakar/Paris - major African rep
         "Goodman Gallery": {"tier": "A", "points": 10},  # Johannesburg/London
         "Thaddaeus Ropac": {"tier": "A", "points": 9},
@@ -55,7 +58,7 @@ class AdvancedArtistScorer:
     }
 
     # Major international art residencies
-    PRESTIGIOUS_RESIDENCIES = {
+    PRESTIGIOUS_RESIDENCIES: dict[str, dict[str, Any]] = {
         "Documenta": {"points": 10},
         "Venice Biennale": {"points": 10},
         "Berlin Biennial": {"points": 9},
@@ -69,7 +72,7 @@ class AdvancedArtistScorer:
     }
 
     # Awards & recognitions
-    PRESTIGIOUS_AWARDS = {
+    PRESTIGIOUS_AWARDS: dict[str, dict[str, Any]] = {
         "Hugo Boss Prize": {"points": 9},
         "Turner Prize": {"points": 9},
         "Golden Nica": {"points": 8},
@@ -94,7 +97,7 @@ class AdvancedArtistScorer:
 
         # Calculate bonuses
         bonus_breakdown = {}
-        total_bonus = 0
+        total_bonus = 0.0
 
         # 1. Major fair participation
         fair_bonus = self._detect_fair_participation(prospect)
@@ -310,7 +313,7 @@ class AdvancedArtistScorer:
 
         logger.info(f"📊 Re-scoring {len(artists)} artists with advanced scoring...")
 
-        results = []
+        results: list[dict[str, Any]] = []
 
         for artist in artists:
             new_score, breakdown = self.calculate_enhanced_artist_score(artist)
@@ -330,13 +333,13 @@ class AdvancedArtistScorer:
                 # Generate signal if major upgrade
                 if score_change > 15:
                     signal = Signal(
-                        prospect_id=artist.id,
+                        prospect_id=require_id(artist),
                         signal_type=SignalType.NEW_PUBLICATION,
                         description=f"Advanced scoring: score improved from {old_score:.0f} to {new_score:.0f}. "
                         f"Bonuses: {breakdown['bonuses']}",
                         signal_date=datetime.now(timezone.utc),
-                        importance="MEDIUM",
-                        confidence="HIGH",
+                        importance=Importance.MEDIUM,
+                        confidence=Confidence.HIGH,
                     )
                     self.session.add(signal)
 

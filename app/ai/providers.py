@@ -11,6 +11,7 @@ All AI decisions go through this abstraction so we can:
 import json
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 import requests
 
@@ -53,7 +54,7 @@ class OllamaProvider(AIProvider):
     ) -> str:
         """Call Ollama API and return response."""
         try:
-            payload = {
+            payload: dict[str, Any] = {
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False,

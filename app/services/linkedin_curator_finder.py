@@ -20,10 +20,12 @@ import os
 from datetime import datetime, timezone
 
 import requests
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.db import SessionLocal
 from app.models import Prospect, ProspectType, Signal, SignalType
+from app.models.base import require_id
+from app.models.signal import Confidence, Importance
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +107,7 @@ class LinkedInCuratorFinder:
                 response = requests.get(
                     f"{self.proxycurl_endpoint}/profile/search",
                     headers=headers,
-                    params={"search_query": query, "page_size": 10},
+                    params={"search_query": query, "page_size": "10"},
                     timeout=10,
                 )
 
@@ -145,15 +147,15 @@ class LinkedInCuratorFinder:
         # Get all prospects with LinkedIn URLs
         prospects = self.session.exec(
             select(Prospect).where(
-                (Prospect.linkedin.is_not(None))
-                & (Prospect.type.in_([ProspectType.ART_ADVISOR, ProspectType.CURATOR]))
+                (col(Prospect.linkedin).is_not(None))
+                & (col(Prospect.type).in_([ProspectType.ART_ADVISOR, ProspectType.CURATOR]))
             )
         ).all()
 
         logger.info(f"📊 Monitoring {len(prospects)} LinkedIn profiles for changes...")
 
         for prospect in prospects:
-            if not self.proxycurl_api_key:
+            if not self.proxycurl_api_key or not prospect.linkedin:
                 continue
 
             try:
@@ -167,13 +169,13 @@ class LinkedInCuratorFinder:
                 new_title = profile_data.get("headline", "")
                 if new_title and prospect.description != new_title:
                     signal = Signal(
-                        prospect_id=prospect.id,
+                        prospect_id=require_id(prospect),
                         signal_type=SignalType.CAREER_CHANGE,
                         description=f"Title updated: {new_title}",
                         source_url=prospect.linkedin,
                         signal_date=datetime.now(timezone.utc),
-                        importance="HIGH",
-                        confidence="HIGH",
+                        importance=Importance.HIGH,
+                        confidence=Confidence.HIGH,
                     )
                     signals.append(signal)
                     logger.info(f"🔄 Title change detected for {prospect.name}: {new_title}")
@@ -182,13 +184,13 @@ class LinkedInCuratorFinder:
                 new_company = profile_data.get("current_company", {}).get("name")
                 if new_company and prospect.specialty != new_company:
                     signal = Signal(
-                        prospect_id=prospect.id,
+                        prospect_id=require_id(prospect),
                         signal_type=SignalType.CAREER_CHANGE,
                         description=f"Now at: {new_company}",
                         source_url=prospect.linkedin,
                         signal_date=datetime.now(timezone.utc),
-                        importance="MEDIUM",
-                        confidence="HIGH",
+                        importance=Importance.MEDIUM,
+                        confidence=Confidence.HIGH,
                     )
                     signals.append(signal)
                     logger.info(f"🏢 Company change detected for {prospect.name}: {new_company}")
@@ -197,13 +199,13 @@ class LinkedInCuratorFinder:
                 recent_connections = profile_data.get("connections_count", 0)
                 if recent_connections > 500:
                     signal = Signal(
-                        prospect_id=prospect.id,
+                        prospect_id=require_id(prospect),
                         signal_type=SignalType.HIRING_SPREE,
                         description=f"Active networker: {recent_connections} LinkedIn connections",
                         source_url=prospect.linkedin,
                         signal_date=datetime.now(timezone.utc),
-                        importance="MEDIUM",
-                        confidence="MEDIUM",
+                        importance=Importance.MEDIUM,
+                        confidence=Confidence.MEDIUM,
                     )
                     signals.append(signal)
 

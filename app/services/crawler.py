@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class CrawlResult:
     """Result of crawling a website."""
 
-    def __init__(self, url: str, status: str, data: dict = None, error: str = None):
+    def __init__(self, url: str, status: str, data: dict | None = None, error: str | None = None):
         self.url = url
         self.status = status  # SUCCESS, ERROR, TIMEOUT, ROBOTS_TXT
         self.data = data or {}
@@ -149,7 +149,7 @@ class Crawler:
             data["phones"] = list(phones)[:3]
 
             # Social media links
-            social_media = {
+            social_media: dict[str, str | None] = {
                 "instagram": None,
                 "linkedin": None,
                 "facebook": None,
@@ -158,7 +158,7 @@ class Crawler:
 
             links = soup.find_all("a", href=True)
             for link in links:
-                href = link.get("href", "").lower()
+                href = str(link.get("href") or "").lower()
                 if "instagram.com" in href and not social_media["instagram"]:
                     social_media["instagram"] = href
                 elif "linkedin.com" in href and not social_media["linkedin"]:

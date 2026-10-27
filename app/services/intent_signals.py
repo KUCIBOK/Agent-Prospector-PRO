@@ -54,7 +54,7 @@ class IntentSignalDetector:
 
         Returns list of new signals.
         """
-        signals = []
+        signals: list[Signal] = []
 
         # 1. LinkedIn changes (title, new recruits, endorsements)
         linkedin_signals = self._check_linkedin_changes(prospect)
@@ -88,7 +88,7 @@ class IntentSignalDetector:
         In production: scrape/monitor LinkedIn profile updates.
         For now: placeholder for integration with LinkedIn API or webhooks.
         """
-        signals = []
+        signals: list[Signal] = []
 
         if not prospect.linkedin:
             return signals
@@ -106,8 +106,8 @@ class IntentSignalDetector:
                 description=f"Title changed to: {profile_data['title']}",
                 source_url=prospect.linkedin,
                 signal_date=datetime.now(timezone.utc),
-                importance="HIGH",
-                confidence="HIGH"
+                importance=Importance.HIGH,
+                confidence=Confidence.HIGH
             )
             signals.append(signal)
 
@@ -119,8 +119,8 @@ class IntentSignalDetector:
                 description=f"{len(profile_data['recent_company_hires'])} new hires in {profile_data['company']} recently",
                 source_url=prospect.linkedin,
                 signal_date=datetime.now(timezone.utc),
-                importance="MEDIUM",
-                confidence="MEDIUM"
+                importance=Importance.MEDIUM,
+                confidence=Confidence.MEDIUM
             )
             signals.append(signal)
         """
@@ -133,7 +133,7 @@ class IntentSignalDetector:
 
         In production: scrape Artfacts, Artnet, gallery websites, press releases.
         """
-        signals = []
+        signals: list[Signal] = []
 
         # TODO: Integrate with exhibition APIs or scraping
         # Placeholder framework:
@@ -152,8 +152,8 @@ class IntentSignalDetector:
                     description=f"Upcoming exhibition: {expo['title']} ({expo['venue']})",
                     source_url=expo['url'],
                     signal_date=datetime.now(timezone.utc),
-                    importance="HIGH",
-                    confidence="HIGH"
+                    importance=Importance.HIGH,
+                    confidence=Confidence.HIGH
                 )
                 signals.append(signal)
         """
@@ -166,7 +166,7 @@ class IntentSignalDetector:
 
         In production: scrape LinkedIn Jobs, Indeed, Artsy Jobs, Idealist.org
         """
-        signals = []
+        signals: list[Signal] = []
 
         # TODO: Integrate with job posting APIs
         """
@@ -184,8 +184,8 @@ class IntentSignalDetector:
                     description=f"Open position: {job['title']}",
                     source_url=job['url'],
                     signal_date=datetime.now(timezone.utc),
-                    importance="HIGH",
-                    confidence="HIGH"
+                    importance=Importance.HIGH,
+                    confidence=Confidence.HIGH
                 )
                 signals.append(signal)
         """
@@ -198,7 +198,7 @@ class IntentSignalDetector:
 
         In production: scrape Artnet, Artfacts, gallery websites, press releases.
         """
-        signals = []
+        signals: list[Signal] = []
 
         # TODO: Integrate with gallery database and press monitoring
         """
@@ -217,8 +217,8 @@ class IntentSignalDetector:
                     description=news['title'],
                     source_url=news['url'],
                     signal_date=datetime.now(timezone.utc),
-                    importance="MEDIUM",
-                    confidence="MEDIUM"
+                    importance=Importance.MEDIUM,
+                    confidence=Confidence.MEDIUM
                 )
                 signals.append(signal)
         """

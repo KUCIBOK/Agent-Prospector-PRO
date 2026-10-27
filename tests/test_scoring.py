@@ -1,11 +1,11 @@
 """Tests for scoring service."""
 
-from app.models import Prospect, ProspectType, ConfidenceLevel, Priority
+from app.models import ConfidenceLevel, Priority, Prospect, ProspectType
 from app.services.scoring import (
     calculate_artist_fit_score,
-    calculate_saas_fit_score,
     calculate_confidence_score,
     calculate_priority,
+    calculate_saas_fit_score,
 )
 
 

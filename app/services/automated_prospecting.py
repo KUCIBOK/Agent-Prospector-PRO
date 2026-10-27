@@ -14,7 +14,7 @@ Features:
 import logging
 from datetime import datetime, timezone
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.models import (
     Prospect,
@@ -23,6 +23,7 @@ from app.models import (
     Source,
     SourceType,
 )
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ class AutomatedProspectingEngine:
         - Apollo.io (professional email finder)
         - Hunter.io (email finder)
         """
-        results = []
+        results: list[dict] = []
 
         logger.warning("⚠️  LinkedIn scraping requires official API or paid service")
         logger.info("Recommended: Apollo.io, Hunter.io, or LinkedIn Recruiter API")
@@ -173,7 +174,7 @@ class AutomatedProspectingEngine:
         - Get Business account verification
         - Request API access from Meta
         """
-        results = []
+        results: list[dict] = []
 
         logger.warning("⚠️  Instagram scraping requires official Graph API")
         logger.info("Setup: Meta Business Account → Instagram Business → Graph API")
@@ -191,7 +192,7 @@ class AutomatedProspectingEngine:
 
         Uses SerpAPI or similar service (legal + reliable).
         """
-        results = []
+        results: list[dict] = []
 
         logger.info(f"🔍 Scraping Google Search for {len(keywords)} keywords")
 
@@ -249,7 +250,7 @@ class AutomatedProspectingEngine:
             # Add source
             if source_url:
                 source = Source(
-                    prospect_id=prospect.id,
+                    prospect_id=require_id(prospect),
                     url=source_url,
                     source_type=source_type,
                     title="Auto-scraped",
@@ -302,10 +303,14 @@ class AutomatedProspectingEngine:
 
         for i, result in enumerate(all_results[: self.config.daily_limit]):
             try:
+                if not result.get("name") or not result.get("country"):
+                    logger.warning(f"Skipping result {i}: missing name or country")
+                    errors += 1
+                    continue
                 prospect = self.create_prospect_from_scraped_data(
-                    name=result.get("name"),
+                    name=result["name"],
                     prospect_type=result.get("type", ProspectType.CURATOR),
-                    country=result.get("country"),
+                    country=result["country"],
                     website=result.get("url"),
                     description=result.get("description"),
                     source_url=result.get("url"),
@@ -436,7 +441,7 @@ class AutomatedProspectingEngine:
         prospects = self.session.exec(
             select(Prospect)
             .where(Prospect.status == ProspectStatus.IDENTIFIED)
-            .where(Prospect.email.isnot(None))
+            .where(col(Prospect.email).isnot(None))
             .limit(100)
         ).all()
 

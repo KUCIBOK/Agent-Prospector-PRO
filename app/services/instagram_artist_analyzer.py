@@ -23,10 +23,12 @@ import os
 from datetime import datetime, timezone
 
 import requests
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.db import SessionLocal
 from app.models import Prospect, ProspectType, Signal, SignalType
+from app.models.base import require_id
+from app.models.signal import Confidence, Importance
 
 logger = logging.getLogger(__name__)
 
@@ -321,7 +323,8 @@ class InstagramArtistAnalyzer:
         """
         artists = self.session.exec(
             select(Prospect).where(
-                (Prospect.type == ProspectType.ARTIST) & (Prospect.instagram.is_not(None))
+                col(Prospect.type) == ProspectType.ARTIST,
+                col(Prospect.instagram).is_not(None),
             )
         ).all()
 
@@ -342,16 +345,18 @@ class InstagramArtistAnalyzer:
                 # Detect signals if ESTABLISHED
                 if analysis.get("maturity_level") == "ESTABLISHED" and artist.score >= 70:
                     signal = Signal(
-                        prospect_id=artist.id,
+                        prospect_id=require_id(artist),
                         signal_type=SignalType.NEW_PUBLICATION,
                         description=f"Instagram: {analysis.get('followers')} followers, "
                         f"{analysis.get('engagement_rate', 0):.1f}% engagement",
                         source_url=f"https://instagram.com/{artist.instagram}",
                         signal_date=datetime.now(timezone.utc),
                         importance=(
-                            "HIGH" if analysis.get("maturity_level") == "ESTABLISHED" else "MEDIUM"
+                            Importance.HIGH
+                            if analysis.get("maturity_level") == "ESTABLISHED"
+                            else Importance.MEDIUM
                         ),
-                        confidence="HIGH",
+                        confidence=Confidence.HIGH,
                     )
                     self.session.add(signal)
 

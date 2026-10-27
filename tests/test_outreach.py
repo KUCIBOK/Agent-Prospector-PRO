@@ -1,6 +1,6 @@
 """Tests for outreach service."""
 
-from app.models import Prospect, ProspectType, ConfidenceLevel
+from app.models import ConfidenceLevel, Prospect, ProspectType
 from app.services.outreach import (
     detect_persona,
     generate_message_variant,

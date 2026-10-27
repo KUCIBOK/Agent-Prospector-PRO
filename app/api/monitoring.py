@@ -8,8 +8,7 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from sqlmodel import func, select
+from sqlmodel import Session, col, func, select
 
 from app.db import get_session
 from app.models import (
@@ -46,7 +45,7 @@ def list_jobs(
     limit: int = Query(50, ge=1, le=500),
 ) -> JobsListResponse:
     """List recent jobs with status breakdown."""
-    query = select(Job).order_by(Job.created_at.desc()).limit(limit)
+    query = select(Job).order_by(col(Job.created_at).desc()).limit(limit)
 
     if status:
         query = query.where(Job.status == status)
@@ -214,7 +213,7 @@ def recent_signals(
     signals = session.exec(
         select(Signal)
         .where(Signal.signal_date >= cutoff)
-        .order_by(Signal.signal_date.desc())
+        .order_by(col(Signal.signal_date).desc())
         .limit(limit)
     ).all()
 
@@ -243,7 +242,7 @@ def summary(session: Session = Depends(get_session)):
     artists = session.scalar(
         select(func.count()).select_from(Prospect).where(Prospect.type == ProspectType.ARTIST)
     )
-    clients = prospects_total - artists if prospects_total else 0
+    clients = (prospects_total or 0) - (artists or 0)
 
     messages_total = session.scalar(select(func.count()).select_from(Message))
     messages_draft = session.scalar(

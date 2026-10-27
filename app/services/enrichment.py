@@ -21,6 +21,7 @@ import pycountry
 from sqlmodel import Session
 
 from app.models import Confidence, Importance, Prospect, Signal, SignalType
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,9 @@ class Enrichment:
 
         # Try by name
         try:
-            country_obj = pycountry.countries.search_fuzzy(country.strip())
-            if country_obj:
-                return country_obj[0].alpha_2
+            matches = pycountry.countries.search_fuzzy(country.strip())
+            if matches:
+                return matches[0].alpha_2
         except Exception:
             pass
 
@@ -143,7 +144,7 @@ class Enrichment:
 
         return phone
 
-    def enrich_prospect(self, prospect: Prospect, crawl_data: dict = None) -> Prospect:
+    def enrich_prospect(self, prospect: Prospect, crawl_data: dict | None = None) -> Prospect:
         """
         Enrich prospect data with normalizations.
 
@@ -226,7 +227,7 @@ class Enrichment:
         - Partnership
         - Acquisition
         """
-        signals = []
+        signals: list[Signal] = []
         text = (
             (prospect.description or "")
             + " "
@@ -241,7 +242,7 @@ class Enrichment:
         # Exhibition signals
         if any(word in text for word in ["exhibition", "expo", "show", "displayed"]):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.NEW_EXHIBITION,
                 description="Detected exhibition activity",
                 signal_date=datetime.now(timezone.utc),
@@ -255,7 +256,7 @@ class Enrichment:
             word in text for word in ["call for artists", "open call", "submissions", "apply now"]
         ):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.CALL_FOR_ARTISTS,
                 description="Detected call for artists",
                 signal_date=datetime.now(timezone.utc),
@@ -267,7 +268,7 @@ class Enrichment:
         # Fair participation
         if any(word in text for word in ["fair", "biennial", "triennial", "biennale"]):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.FAIR_PARTICIPATION,
                 description="Detected fair/biennial participation",
                 signal_date=datetime.now(timezone.utc),
@@ -288,7 +289,7 @@ class Enrichment:
             ]
         ):
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.INTERNATIONAL_ACTIVITY,
                 description="Detected international activity",
                 signal_date=datetime.now(timezone.utc),
@@ -300,7 +301,7 @@ class Enrichment:
         # Africa interest (already in data, but flag as signal)
         if prospect.africa_interest and prospect.africa_interest.upper() in ["HIGH", "MEDIUM"]:
             signal = Signal(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 signal_type=SignalType.INTERNATIONAL_ACTIVITY,
                 description=f"Detected Africa interest: {prospect.africa_interest}",
                 signal_date=datetime.now(timezone.utc),

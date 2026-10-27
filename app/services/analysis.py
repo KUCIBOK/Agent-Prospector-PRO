@@ -11,11 +11,13 @@ Analyzes:
 """
 
 import logging
+from typing import Any
 
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from app.ai.providers import AIProvider
 from app.models import AIAnalysis, Prospect
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +135,7 @@ class AnalysisService:
         """
         logger.info(f"🧠 Analyzing prospect: {prospect.name} (ID: {prospect.id})")
 
-        analysis = {
+        analysis: dict[str, Any] = {
             "africa_interest": self.analyze_africa_interest(prospect),
             "international_activity": self.analyze_international_activity(prospect),
             "digital_maturity": self.analyze_digital_maturity(prospect),
@@ -147,7 +149,7 @@ class AnalysisService:
 
         # Store analysis
         ai_analysis = AIAnalysis(
-            prospect_id=prospect.id,
+            prospect_id=require_id(prospect),
             analysis_type="comprehensive",
             raw_output=analysis,
             model_version="1.0",
@@ -251,7 +253,7 @@ class AnalysisService:
         prospects = self.session.exec(
             select(Prospect)
             .where(Prospect.status == ProspectStatus.IDENTIFIED)
-            .order_by(Prospect.created_at.desc())
+            .order_by(col(Prospect.created_at).desc())
             .limit(limit)
         ).all()
 

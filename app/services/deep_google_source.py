@@ -24,6 +24,7 @@ from app.models import (
     Source,
     SourceType,
 )
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class DeepGoogleSource:
 
         For now, shows the structure.
         """
-        results = []
+        results: list[dict] = []
 
         logger.info(f"🔍 Would search Google: '{query}'")
 
@@ -151,8 +152,9 @@ class DeepGoogleSource:
 
             # Look in href links
             for link in soup.find_all("a", href=True):
-                if link["href"].startswith("mailto:"):
-                    return link["href"].replace("mailto:", "")
+                href = str(link["href"])
+                if href.startswith("mailto:"):
+                    return href.replace("mailto:", "")
 
             return None
 
@@ -195,7 +197,7 @@ class DeepGoogleSource:
         email: str | None,
         website: str,
         description: str = "Contemporary art curator",
-        source_url: str = None,
+        source_url: str | None = None,
     ) -> Prospect | None:
         """Create a hot prospect from scraped data."""
         try:
@@ -225,7 +227,7 @@ class DeepGoogleSource:
             # Add source
             if source_url or website:
                 source = Source(
-                    prospect_id=prospect.id,
+                    prospect_id=require_id(prospect),
                     url=source_url or website,
                     source_type=SourceType.WEBSITE,
                     title=f"Deep Google Source: {gallery_name or 'Gallery'}",

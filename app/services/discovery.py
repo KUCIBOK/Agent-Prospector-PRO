@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from sqlmodel import Session, select
 
 from app.models import Prospect, ProspectStatus, ProspectType, Source, SourceType
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 class SearchQuery:
     """Search query builder."""
 
-    def __init__(self, target_type: ProspectType, keywords: list, countries: list = None):
+    def __init__(self, target_type: ProspectType, keywords: list, countries: list | None = None):
         self.target_type = target_type
         self.keywords = keywords
         self.countries = countries or []
@@ -80,7 +81,7 @@ class DiscoveryEngine:
         self.session = session
         self.headers = {"User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"}
 
-    def generate_artist_searches(self, countries: list = None) -> list[SearchQuery]:
+    def generate_artist_searches(self, countries: list | None = None) -> list[SearchQuery]:
         """Generate artist discovery queries."""
         if countries is None:
             countries = ["Senegal", "Nigeria", "Kenya", "South Africa", "Morocco"]
@@ -150,7 +151,7 @@ class DiscoveryEngine:
 
         # For now, return empty (would need API key)
         # In production, integrate with SerpAPI or Selenium
-        results = []
+        results: list[dict] = []
 
         # Placeholder: Would make real API call here
         # url = f"https://www.google.com/search?q={query}"
@@ -175,10 +176,10 @@ class DiscoveryEngine:
         # client = Client()
         # results = client.hashtag_medias_recent_v2(hashtag)
 
-        results = []
+        results: list[dict] = []
         return results
 
-    def search_artfacts(self, keywords: list, country: str = None) -> list[dict]:
+    def search_artfacts(self, keywords: list, country: str | None = None) -> list[dict]:
         """
         Search artfacts.net for artists.
 
@@ -190,7 +191,7 @@ class DiscoveryEngine:
         # This is a public directory, scraping is typically allowed
         # but should respect rate limits
 
-        results = []
+        results: list[dict] = []
         return results
 
     def create_prospect_from_result(
@@ -235,7 +236,7 @@ class DiscoveryEngine:
         # Add source
         if source_url:
             source = Source(
-                prospect_id=prospect.id,
+                prospect_id=require_id(prospect),
                 url=source_url,
                 source_type=SourceType.WEBSITE,
                 title=f"Discovery: {name}",
@@ -247,7 +248,7 @@ class DiscoveryEngine:
         logger.info(f"✅ Created prospect: {prospect.name} (ID: {prospect.id})")
         return prospect
 
-    def discover_artists(self, countries: list = None, limit: int = 50) -> dict:
+    def discover_artists(self, countries: list | None = None, limit: int = 50) -> dict:
         """
         Discover artists.
 
