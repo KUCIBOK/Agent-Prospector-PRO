@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.security import require_api_key
@@ -77,15 +78,34 @@ async def health_check():
 
 
 @app.get("/ready", tags=["health"])
-async def readiness_check():
-    """Readiness check endpoint (checks dependencies)."""
-    # TODO: Add dependency checks (database, redis, ollama)
-    return {
-        "ready": True,
-        "database": "ok",  # placeholder
-        "redis": "ok",  # placeholder
-        "ai_service": "ok",  # placeholder
-    }
+def readiness_check():
+    """Readiness check: database (required), Redis and Ollama (reported)."""
+    import requests
+    from redis import Redis
+    from sqlalchemy import text
+
+    from app.db import engine
+
+    checks = {}
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {type(e).__name__}"
+    try:
+        Redis.from_url(settings.redis_url, socket_timeout=2).ping()
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {type(e).__name__}"
+    try:
+        requests.get(f"{settings.ollama_host}/api/tags", timeout=2).raise_for_status()
+        checks["ai_service"] = "ok"
+    except Exception as e:
+        checks["ai_service"] = f"error: {type(e).__name__}"
+
+    ready = all(v == "ok" for v in checks.values())
+    return JSONResponse(status_code=200 if ready else 503, content={"ready": ready, **checks})
 
 
 # ============================================================================

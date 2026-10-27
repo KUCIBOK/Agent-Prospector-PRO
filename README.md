@@ -46,7 +46,7 @@ All fully automated, running 24/7 on your infrastructure.
    git clone <repo-url>
    cd kucibok-prospector
    cp .env.example .env
-   # Edit .env with your settings
+   # Edit .env: set API_KEY, SECRET_KEY, DB_USER, DB_PASSWORD, DB_NAME
    ```
 
 2. **Build & Run**
@@ -86,6 +86,22 @@ celery -A app.workers.tasks worker --loglevel=info
 # In another terminal, run scheduler
 python -m app.scheduler.main
 ```
+
+---
+
+## 🧹 Removing fake prospects from an existing database
+
+Older versions shipped scripts that generated fictional Paris curators. To remove
+any that are in your database (dry run by default, backup written before deleting):
+
+```bash
+python -m scripts.cleanup_fake_prospects                       # list what would be deleted
+python -m scripts.cleanup_fake_prospects --keep-email me@x.com # protect a test contact
+python -m scripts.cleanup_fake_prospects --apply               # back up, confirm, delete
+```
+
+Only prospects with no source URL that match a generator pattern are candidates.
+Verified or enrolled prospects and anyone already contacted are never deleted.
 
 ---
 
