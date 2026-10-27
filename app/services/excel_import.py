@@ -13,7 +13,8 @@ import logging
 from datetime import datetime, timezone
 
 import pandas as pd
-from sqlmodel import Session
+from sqlalchemy import or_
+from sqlmodel import Session, col, select
 
 from app.models import (
     Prospect,
@@ -22,6 +23,7 @@ from app.models import (
     Source,
     SourceType,
 )
+from app.models.base import require_id
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ class ExcelImporter:
     def import_excel(
         self,
         filepath: str,
-        sheet_name: str = 0,
+        sheet_name: str | int = 0,
         skip_duplicates: bool = True,
     ) -> dict:
         """
@@ -110,7 +112,7 @@ class ExcelImporter:
             }
 
         # Normalize column names (lowercase, strip whitespace)
-        df.columns = [col.strip().lower() for col in df.columns]
+        df.columns = [str(c).strip().lower() for c in df.columns]
 
         imported = []
         skipped = 0
@@ -139,17 +141,18 @@ class ExcelImporter:
                 website = row_dict.get("website")
 
                 if skip_duplicates:
-                    from sqlmodel import select
-
-                    existing = self.session.exec(
-                        select(Prospect).where((Prospect.name == name) if name else False)
-                        | ((Prospect.email == email) if email and pd.notna(email) else False)
-                        | (
-                            (Prospect.website == website)
-                            if website and pd.notna(website)
-                            else False
-                        )
-                    ).first()
+                    conditions = []
+                    if name:
+                        conditions.append(col(Prospect.name) == name)
+                    if email and pd.notna(email):
+                        conditions.append(col(Prospect.email) == email)
+                    if website and pd.notna(website):
+                        conditions.append(col(Prospect.website) == website)
+                    existing = (
+                        self.session.exec(select(Prospect).where(or_(*conditions))).first()
+                        if conditions
+                        else None
+                    )
 
                     if existing:
                         logger.warning(f"Duplicate found: {name}")
@@ -176,7 +179,7 @@ class ExcelImporter:
 
                 # Add source (Excel import)
                 source = Source(
-                    prospect_id=prospect.id,
+                    prospect_id=require_id(prospect),
                     url=filepath,
                     source_type=SourceType.OTHER,
                     title="Excel Import",

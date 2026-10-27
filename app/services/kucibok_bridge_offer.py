@@ -16,10 +16,13 @@ Rules:
 import logging
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
 from sqlmodel import Session, select
 
-from app.models import Message, Prospect
+from app.models import Message, MessageChannel, MessageStatus, Prospect
+from app.models.base import require_id
+from app.services.outreach import detect_persona
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +71,7 @@ class KucibokBridgeOffer:
     ]
 
     # Pricing plans
-    PLANS = {
+    PLANS: dict[OfferPlanType, dict[str, Any]] = {
         OfferPlanType.CURATOR: {
             "name": "Plan Curateur",
             "price_min": 21,
@@ -510,11 +513,12 @@ class KucibokBridgeOffer:
             Created Message record
         """
         msg = Message(
-            prospect_id=prospect.id,
-            type="KUCIBOK_BRIDGE_OFFER",
-            status="SENT",
-            subject="Kucibok Bridge — Plateforme de sourcing",
-            body=message,
+            prospect_id=require_id(prospect),
+            persona=detect_persona(prospect),
+            variant_label="KUCIBOK_BRIDGE_OFFER",
+            channel=MessageChannel.EMAIL,
+            status=MessageStatus.SENT,
+            content=f"Subject: Kucibok Bridge — Plateforme de sourcing\n\n{message}",
             sent_at=datetime.now(timezone.utc),
         )
 

@@ -15,7 +15,9 @@ from enum import Enum
 
 from sqlmodel import Session, select
 
-from app.models import Message, MessageStatus, Prospect, ProspectType
+from app.models import Message, MessageChannel, MessageStatus, Prospect, ProspectType
+from app.models.base import require_id
+from app.services.outreach import detect_persona
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +150,7 @@ class KucibokBridgeOutreach:
         artist_medium: str,
         works_available: int,
         dossier_url: str,
-        opening_message: str = None,
+        opening_message: str | None = None,
     ) -> str:
         """
         Render the Kucibok Bridge HTML email template.
@@ -379,11 +381,12 @@ class KucibokBridgeOutreach:
             Created Message record
         """
         msg = Message(
-            prospect_id=prospect.id,
-            type="KUCIBOK_BRIDGE_PLAYBOOK",
+            prospect_id=require_id(prospect),
+            persona=detect_persona(prospect),
+            variant_label="KUCIBOK_BRIDGE_PLAYBOOK",
+            channel=MessageChannel.EMAIL,
             status=MessageStatus.SENT,
-            subject=f"Sourcing & Vetting - {prospect.name}",
-            body=message,
+            content=f"Subject: Sourcing & Vetting - {prospect.name}\n\n{message}",
             sent_at=datetime.now(timezone.utc),
         )
 
