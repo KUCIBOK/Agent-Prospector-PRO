@@ -18,6 +18,7 @@ Respects:
 
 import logging
 import time
+from urllib.robotparser import RobotFileParser
 from datetime import datetime
 from typing import Optional
 from urllib.parse import urljoin, urlparse
@@ -66,26 +67,24 @@ class Crawler:
         self.last_request_time[domain] = time.time()
 
     def _check_robots_txt(self, url: str) -> bool:
-        """Check if URL is allowed by robots.txt."""
+        """Check if URL is allowed by robots.txt (per-agent rules, wildcards)."""
         try:
             parsed = urlparse(url)
-            domain = parsed.netloc
-            robots_url = f"{parsed.scheme}://{domain}/robots.txt"
+            robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
 
             response = self.session.get(robots_url, timeout=5)
-            if response.status_code == 200:
-                robots_text = response.text.lower()
-                path = parsed.path or "/"
+            if response.status_code in (401, 403):
+                logger.warning(f"robots.txt access denied, skipping: {parsed.netloc}")
+                return False
+            if response.status_code != 200:
+                return True  # No robots.txt: everything is allowed
 
-                # Simple check (doesn't parse all robots.txt syntax)
-                if "disallow: /" in robots_text:
-                    logger.warning(f"robots.txt disallows all: {domain}")
-                    return False
-
-                if f"disallow: {path}" in robots_text:
-                    logger.warning(f"robots.txt disallows path: {path}")
-                    return False
-
+            parser = RobotFileParser()
+            parser.parse(response.text.splitlines())
+            agent = self.session.headers.get("User-Agent", "*")
+            if not parser.can_fetch(agent, url):
+                logger.warning(f"robots.txt disallows: {url}")
+                return False
             return True
 
         except Exception as e:
