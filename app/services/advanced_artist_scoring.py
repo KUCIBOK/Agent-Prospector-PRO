@@ -12,16 +12,13 @@ Result: Better identification of truly professional, market-ready artists.
 """
 
 import logging
-from typing import Optional, List, Dict
-from datetime import datetime, timedelta, timezone
-import re
+from datetime import datetime, timezone
 
 from sqlmodel import Session, select
-import requests
 
+from app.db import SessionLocal
 from app.models import Prospect, ProspectType, Signal, SignalType
 from app.services.scoring import calculate_artist_fit_score
-from app.db import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -199,11 +196,13 @@ class AdvancedArtistScorer:
 
             # For V1: Use engagement rate as proxy for growth health
             # This will be improved in V2 with follower tracking
-            logger.debug(f"Instagram growth analysis for {prospect.name}: placeholder (will improve in V2)")
+            logger.debug(
+                f"Instagram growth analysis for {prospect.name}: placeholder (will improve in V2)"
+            )
             bonus = 3  # Placeholder: modest bonus for having Instagram
 
         except Exception as e:
-            logger.warning(f"Error analyzing Instagram growth for {prospect.name}: {str(e)}")
+            logger.warning(f"Error analyzing Instagram growth for {prospect.name}: {e!s}")
             bonus = 0
 
         return bonus
@@ -228,7 +227,9 @@ class AdvancedArtistScorer:
                 bonus += gallery_info["points"]
                 detected_galleries.append(f"{gallery_name} ({gallery_info['tier']})")
 
-        logger.debug(f"Gallery detection for {prospect.name}: {detected_galleries} (bonus: +{bonus})")
+        logger.debug(
+            f"Gallery detection for {prospect.name}: {detected_galleries} (bonus: +{bonus})"
+        )
         return min(bonus, 10)  # Cap at 10 points
 
     def _detect_awards_residencies(self, prospect: Prospect) -> float:
@@ -255,7 +256,9 @@ class AdvancedArtistScorer:
                 bonus += award_info["points"]
                 detected_accolades.append(f"Award: {award_name}")
 
-        logger.debug(f"Awards/Residencies for {prospect.name}: {detected_accolades} (bonus: +{bonus})")
+        logger.debug(
+            f"Awards/Residencies for {prospect.name}: {detected_accolades} (bonus: +{bonus})"
+        )
         return min(bonus, 10)  # Cap at 10 points
 
     def _detect_media_mentions(self, prospect: Prospect) -> float:
@@ -290,10 +293,12 @@ class AdvancedArtistScorer:
         elif mention_count >= 1:
             bonus = 3  # Some media presence
 
-        logger.debug(f"Media mentions for {prospect.name}: {mention_count} keywords (bonus: +{bonus})")
+        logger.debug(
+            f"Media mentions for {prospect.name}: {mention_count} keywords (bonus: +{bonus})"
+        )
         return bonus
 
-    def bulk_rescore_artists(self) -> List[dict]:
+    def bulk_rescore_artists(self) -> list[dict]:
         """
         Re-score all artists with advanced scoring.
 

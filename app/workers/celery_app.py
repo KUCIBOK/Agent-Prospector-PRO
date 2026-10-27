@@ -3,6 +3,7 @@ Celery application configuration.
 """
 
 import logging
+
 from celery import Celery
 
 from app.config import settings

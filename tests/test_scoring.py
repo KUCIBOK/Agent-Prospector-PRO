@@ -1,6 +1,5 @@
 """Tests for scoring service."""
 
-import pytest
 from app.models import Prospect, ProspectType, ConfidenceLevel, Priority
 from app.services.scoring import (
     calculate_artist_fit_score,

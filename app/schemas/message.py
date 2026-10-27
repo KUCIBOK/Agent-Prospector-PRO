@@ -3,11 +3,10 @@ Message schemas for outreach.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models import MessageChannel, MessageStatus, MessageOutcome
+from app.models import MessageChannel, MessageOutcome, MessageStatus
 
 
 class MessageCreate(BaseModel):
@@ -23,8 +22,8 @@ class MessageCreate(BaseModel):
 class MessageUpdate(BaseModel):
     """Update message request."""
 
-    status: Optional[MessageStatus] = None
-    outcome: Optional[MessageOutcome] = None
+    status: MessageStatus | None = None
+    outcome: MessageOutcome | None = None
 
 
 class MessageResponse(BaseModel):
@@ -39,7 +38,7 @@ class MessageResponse(BaseModel):
     status: MessageStatus
     outcome: MessageOutcome
     generated_at: datetime
-    sent_at: Optional[datetime]
+    sent_at: datetime | None
     model_version: str
 
     class Config:

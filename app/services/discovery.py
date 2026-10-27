@@ -13,13 +13,11 @@ Data sources (free):
 """
 
 import logging
-from typing import Optional
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
-import requests
 
-from app.models import Prospect, ProspectType, ProspectStatus, Source, SourceType
+from app.models import Prospect, ProspectStatus, ProspectType, Source, SourceType
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +78,7 @@ class DiscoveryEngine:
 
     def __init__(self, session: Session):
         self.session = session
-        self.headers = {
-            "User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"
-        }
+        self.headers = {"User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"}
 
     def generate_artist_searches(self, countries: list = None) -> list[SearchQuery]:
         """Generate artist discovery queries."""
@@ -202,11 +198,11 @@ class DiscoveryEngine:
         name: str,
         prospect_type: ProspectType,
         country: str,
-        website: Optional[str] = None,
-        instagram: Optional[str] = None,
-        description: Optional[str] = None,
-        source_url: Optional[str] = None,
-    ) -> Optional[Prospect]:
+        website: str | None = None,
+        instagram: str | None = None,
+        description: str | None = None,
+        source_url: str | None = None,
+    ) -> Prospect | None:
         """
         Create or update prospect from search result.
 
@@ -290,17 +286,19 @@ class DiscoveryEngine:
                             break
 
                     except Exception as e:
-                        logger.error(f"Error creating prospect: {str(e)}")
+                        logger.error(f"Error creating prospect: {e!s}")
                         errors += 1
 
                 if discovered >= limit:
                     break
 
             except Exception as e:
-                logger.error(f"Error in artist discovery: {str(e)}")
+                logger.error(f"Error in artist discovery: {e!s}")
                 errors += 1
 
-        logger.info(f"✅ Artist discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors")
+        logger.info(
+            f"✅ Artist discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors"
+        )
         return {
             "discovered": discovered,
             "duplicates": duplicates,
@@ -344,17 +342,19 @@ class DiscoveryEngine:
                             break
 
                     except Exception as e:
-                        logger.error(f"Error creating prospect: {str(e)}")
+                        logger.error(f"Error creating prospect: {e!s}")
                         errors += 1
 
                 if discovered >= limit:
                     break
 
             except Exception as e:
-                logger.error(f"Error in client discovery: {str(e)}")
+                logger.error(f"Error in client discovery: {e!s}")
                 errors += 1
 
-        logger.info(f"✅ Client discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors")
+        logger.info(
+            f"✅ Client discovery complete: {discovered} discovered, {duplicates} duplicates, {errors} errors"
+        )
         return {
             "discovered": discovered,
             "duplicates": duplicates,

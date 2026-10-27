@@ -2,11 +2,10 @@
 Source model — tracks data origins for every claim.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
-
-from sqlmodel import Field, SQLModel, ForeignKey
 import enum
+from datetime import datetime, timezone
+
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -39,10 +38,10 @@ class Source(BaseModel, table=True):
         captured_at: When we fetched this
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prospect_id: int = Field(foreign_key="prospect.id", index=True)
     url: str = Field(index=True)
     source_type: SourceType
-    title: Optional[str] = None
-    captured_text_hash: Optional[str] = Field(default=None, unique=True)
+    title: str | None = None
+    captured_text_hash: str | None = Field(default=None, unique=True)
     captured_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

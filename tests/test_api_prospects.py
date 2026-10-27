@@ -1,10 +1,9 @@
 """Tests for prospects API."""
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.models import Prospect, ProspectType, ProspectStatus
+from app.models import Prospect, ProspectType
 
 
 def test_create_prospect(client: TestClient):

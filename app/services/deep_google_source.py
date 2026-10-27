@@ -11,7 +11,6 @@ Strategy:
 
 import logging
 import re
-from typing import List, Optional
 from datetime import datetime, timezone
 
 import requests
@@ -20,8 +19,8 @@ from sqlmodel import Session, select
 
 from app.models import (
     Prospect,
-    ProspectType,
     ProspectStatus,
+    ProspectType,
     Source,
     SourceType,
 )
@@ -33,7 +32,7 @@ class GoogleSearchQueries:
     """Generate smart Google search queries for curators."""
 
     @staticmethod
-    def generate_independent_curator_queries() -> List[str]:
+    def generate_independent_curator_queries() -> list[str]:
         """Generate queries for independent curators."""
         queries = [
             # Independent curators
@@ -42,30 +41,25 @@ class GoogleSearchQueries:
             "independent art curator portfolio",
             "curator available for exhibitions",
             "curator for hire contemporary art",
-
             # Curators in galleries
             "curator gallery director",
             "curator working in gallery",
             "gallery curator specializing in",
             "curator gallery contemporary",
             "curator gallery emerging",
-
             # Curators with focus areas
             "curator African contemporary art",
             "curator African emerging artists",
             "curator African diaspora art",
             "curator international emerging",
             "curator global contemporary",
-
             # LinkedIn profiles (cached by Google)
             "site:linkedin.com curator contemporary art",
             "site:linkedin.com gallery curator",
             "site:linkedin.com independent curator",
-
             # Gallery websites
             "site:instagram.com curator contemporary",
             "site:instagram.com gallery curator",
-
             # Portfolio websites
             "curator portfolio contemporary art",
             "curator website gallery exhibitions",
@@ -74,7 +68,7 @@ class GoogleSearchQueries:
         return queries
 
     @staticmethod
-    def generate_by_country_queries(countries: List[str]) -> List[str]:
+    def generate_by_country_queries(countries: list[str]) -> list[str]:
         """Generate queries by country."""
         queries = []
 
@@ -91,13 +85,15 @@ class GoogleSearchQueries:
             cities = country_map.get(country_code, [country_code])
 
             for city in cities:
-                queries.extend([
-                    f"curator {city} contemporary art",
-                    f"independent curator {city}",
-                    f"gallery curator {city}",
-                    f"curator {city} gallery",
-                    f"{city} curator emerging artists",
-                ])
+                queries.extend(
+                    [
+                        f"curator {city} contemporary art",
+                        f"independent curator {city}",
+                        f"gallery curator {city}",
+                        f"curator {city} gallery",
+                        f"{city} curator emerging artists",
+                    ]
+                )
 
         return queries
 
@@ -111,7 +107,7 @@ class DeepGoogleSource:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
 
-    def scrape_google_search(self, query: str, max_results: int = 10) -> List[dict]:
+    def scrape_google_search(self, query: str, max_results: int = 10) -> list[dict]:
         """
         Scrape Google Search results.
 
@@ -137,34 +133,34 @@ class DeepGoogleSource:
         # For now, return example structure
         return results
 
-    def extract_email_from_url(self, url: str) -> Optional[str]:
+    def extract_email_from_url(self, url: str) -> str | None:
         """Extract email by visiting URL."""
         try:
             if not url.startswith("http"):
                 url = f"https://{url}"
 
             response = requests.get(url, timeout=10, headers=self.headers)
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Find email patterns
             page_text = soup.get_text()
-            emails = re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', page_text)
+            emails = re.findall(r"[\w\.-]+@[\w\.-]+\.\w+", page_text)
 
             if emails:
                 return emails[0]  # Return first found
 
             # Look in href links
-            for link in soup.find_all('a', href=True):
-                if link['href'].startswith('mailto:'):
-                    return link['href'].replace('mailto:', '')
+            for link in soup.find_all("a", href=True):
+                if link["href"].startswith("mailto:"):
+                    return link["href"].replace("mailto:", "")
 
             return None
 
         except Exception as e:
-            logger.warning(f"Could not extract email from {url}: {str(e)}")
+            logger.warning(f"Could not extract email from {url}: {e!s}")
             return None
 
-    def extract_name_from_text(self, text: str) -> Optional[str]:
+    def extract_name_from_text(self, text: str) -> str | None:
         """Extract curator name from text."""
         # Look for patterns like "Curator: Name" or "By Name"
         patterns = [
@@ -180,14 +176,14 @@ class DeepGoogleSource:
 
         return None
 
-    def extract_gallery_name(self, url: str, title: str) -> Optional[str]:
+    def extract_gallery_name(self, url: str, title: str) -> str | None:
         """Extract gallery name from URL or title."""
         # Extract from domain
-        domain_match = re.search(r'://(?:www\.)?([^/.]+)', url)
+        domain_match = re.search(r"://(?:www\.)?([^/.]+)", url)
         if domain_match:
             domain_name = domain_match.group(1)
             # Clean up domain name
-            name = domain_name.replace('-', ' ').replace('.com', '').title()
+            name = domain_name.replace("-", " ").replace(".com", "").title()
             return name
 
         return None
@@ -195,19 +191,17 @@ class DeepGoogleSource:
     def create_hot_prospect(
         self,
         name: str,
-        gallery_name: Optional[str],
-        email: Optional[str],
+        gallery_name: str | None,
+        email: str | None,
         website: str,
         description: str = "Contemporary art curator",
         source_url: str = None,
-    ) -> Optional[Prospect]:
+    ) -> Prospect | None:
         """Create a hot prospect from scraped data."""
         try:
             # Check for duplicates
             if name:
-                existing = self.session.exec(
-                    select(Prospect).where(Prospect.name == name)
-                ).first()
+                existing = self.session.exec(select(Prospect).where(Prospect.name == name)).first()
                 if existing:
                     logger.info(f"⏭️  Duplicate: {name}")
                     return None
@@ -244,7 +238,7 @@ class DeepGoogleSource:
             return prospect
 
         except Exception as e:
-            logger.error(f"Error creating prospect: {str(e)}")
+            logger.error(f"Error creating prospect: {e!s}")
             return None
 
     def deep_source_curators(self, target_count: int = 50) -> dict:
@@ -324,16 +318,16 @@ class DeepGoogleSource:
                         "gallery": f"{data['gallery']} {i}",
                         "email": f"curator{i}@example-gallery.com",
                         "website": f"https://gallery-{i}.com",
-                        "description": data['description'],
+                        "description": data["description"],
                     }
 
                 prospect = self.create_hot_prospect(
-                    name=data['name'],
-                    gallery_name=data['gallery'],
-                    email=data['email'],
-                    website=data['website'],
-                    description=data['description'],
-                    source_url=data['website'],
+                    name=data["name"],
+                    gallery_name=data["gallery"],
+                    email=data["email"],
+                    website=data["website"],
+                    description=data["description"],
+                    source_url=data["website"],
                 )
 
                 if prospect:
@@ -343,10 +337,10 @@ class DeepGoogleSource:
                     duplicates += 1
 
             except Exception as e:
-                logger.error(f"Error processing result {i}: {str(e)}")
+                logger.error(f"Error processing result {i}: {e!s}")
                 errors += 1
 
-        logger.info(f"✅ Deep sourcing complete:")
+        logger.info("✅ Deep sourcing complete:")
         logger.info(f"   ✅ Created: {created} hot prospects")
         logger.info(f"   ⏭️  Duplicates: {duplicates}")
         logger.info(f"   ❌ Errors: {errors}")

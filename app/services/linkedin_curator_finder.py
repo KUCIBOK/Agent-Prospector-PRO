@@ -17,14 +17,13 @@ Monitors for:
 
 import logging
 import os
-from typing import Optional, List
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-from sqlmodel import Session, select
 import requests
+from sqlmodel import Session, select
 
-from app.models import Prospect, ProspectType, Signal, SignalType
 from app.db import SessionLocal
+from app.models import Prospect, ProspectType, Signal, SignalType
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class LinkedInCuratorFinder:
         self.proxycurl_api_key = os.getenv("PROXYCURL_API_KEY")
         self.proxycurl_endpoint = "https://napi.proxycurl.com/v2/linkedin"
 
-    def discover_curators_manual_search(self, keywords: List[str]) -> List[dict]:
+    def discover_curators_manual_search(self, keywords: list[str]) -> list[dict]:
         """
         Manual search strategy using free sources (no API key needed).
 
@@ -73,7 +72,7 @@ class LinkedInCuratorFinder:
         logger.info(f"📋 Found {len(discovered)} curator profiles to research")
         return discovered
 
-    def discover_curators_from_proxycurl(self) -> List[dict]:
+    def discover_curators_from_proxycurl(self) -> list[dict]:
         """
         Use Proxycurl API to search for curators (requires API key).
 
@@ -130,12 +129,12 @@ class LinkedInCuratorFinder:
                     logger.warning(f"Proxycurl search failed: {response.status_code}")
 
             except Exception as e:
-                logger.error(f"Error searching Proxycurl: {str(e)}")
+                logger.error(f"Error searching Proxycurl: {e!s}")
 
         logger.info(f"✅ Proxycurl: discovered {len(discovered)} curator profiles")
         return discovered
 
-    def monitor_linkedin_changes(self) -> List[Signal]:
+    def monitor_linkedin_changes(self) -> list[Signal]:
         """
         Monitor existing LinkedIn profiles for changes.
 
@@ -146,7 +145,7 @@ class LinkedInCuratorFinder:
         # Get all prospects with LinkedIn URLs
         prospects = self.session.exec(
             select(Prospect).where(
-                (Prospect.linkedin != None)
+                (Prospect.linkedin.is_not(None))
                 & (Prospect.type.in_([ProspectType.ART_ADVISOR, ProspectType.CURATOR]))
             )
         ).all()
@@ -209,7 +208,7 @@ class LinkedInCuratorFinder:
                     signals.append(signal)
 
             except Exception as e:
-                logger.error(f"Error monitoring {prospect.name}: {str(e)}")
+                logger.error(f"Error monitoring {prospect.name}: {e!s}")
 
         # Save signals
         for signal in signals:
@@ -221,7 +220,7 @@ class LinkedInCuratorFinder:
 
         return signals
 
-    def _fetch_linkedin_profile(self, linkedin_url: str) -> Optional[dict]:
+    def _fetch_linkedin_profile(self, linkedin_url: str) -> dict | None:
         """
         Fetch LinkedIn profile data via Proxycurl API.
 
@@ -247,7 +246,7 @@ class LinkedInCuratorFinder:
                 return None
 
         except Exception as e:
-            logger.error(f"Error fetching LinkedIn profile: {str(e)}")
+            logger.error(f"Error fetching LinkedIn profile: {e!s}")
             return None
 
     def enrich_prospect_from_linkedin(self, prospect: Prospect) -> bool:
@@ -292,7 +291,7 @@ class LinkedInCuratorFinder:
             return True
 
         except Exception as e:
-            logger.error(f"Error enriching prospect from LinkedIn: {str(e)}")
+            logger.error(f"Error enriching prospect from LinkedIn: {e!s}")
             return False
 
 
@@ -305,11 +304,13 @@ def discover_linkedin_curators_sync(use_api: bool = False) -> int:
         if use_api and os.getenv("PROXYCURL_API_KEY"):
             curators = finder.discover_curators_from_proxycurl()
         else:
-            curators = finder.discover_curators_manual_search([
-                "art advisor contemporary",
-                "museum curator Africa",
-                "gallery director international",
-            ])
+            curators = finder.discover_curators_manual_search(
+                [
+                    "art advisor contemporary",
+                    "museum curator Africa",
+                    "gallery director international",
+                ]
+            )
 
         # TODO: Save discovered curators to DB
         logger.info(f"🎯 Discovered {len(curators)} curators")

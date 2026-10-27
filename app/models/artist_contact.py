@@ -2,11 +2,10 @@
 Artist contact model — tracks artist onboarding via Instagram.
 """
 
-from datetime import datetime
-from typing import Optional
-
-from sqlmodel import Field, ForeignKey
 import enum
+from datetime import datetime
+
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -37,14 +36,14 @@ class ArtistContact(BaseModel, table=True):
         enrolled_at: When account was created
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prospect_id: int = Field(foreign_key="prospect.id", unique=True, index=True)
     instagram_handle: str = Field(index=True)
-    invitation_sent_at: Optional[datetime] = None
+    invitation_sent_at: datetime | None = None
 
     # CRITICAL FIELD: Gatekeeper for auto-send
-    first_contact_initiated_at: Optional[datetime] = Field(default=None, index=True)
+    first_contact_initiated_at: datetime | None = Field(default=None, index=True)
 
-    first_contact_channel: Optional[str] = None  # story_reply, message, link_click
+    first_contact_channel: str | None = None  # story_reply, message, link_click
     enrollment_status: EnrollmentStatus = Field(default=EnrollmentStatus.INVITED, index=True)
-    enrolled_at: Optional[datetime] = None
+    enrolled_at: datetime | None = None

@@ -3,12 +3,14 @@ Kucibok Prospector — FastAPI main application.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
+from app.api import messages_router, monitoring_router, prospects_router
 from app.config import settings
 from app.security import require_api_key
 
@@ -27,13 +29,14 @@ async def lifespan(app: FastAPI):
     Application lifespan context manager (startup & shutdown).
     """
     # Startup
-    logger.info(f"🚀 Kucibok Prospector v1.1.0 starting up...")
+    logger.info("🚀 Kucibok Prospector v1.1.0 starting up...")
     logger.info(f"   API: http://{settings.api_host}:{settings.api_port}")
     logger.info(f"   Debug: {settings.debug}")
     logger.info(f"   Model: {settings.model_name}")
 
     # Initialize database
     from app.db import init_db
+
     try:
         init_db()
     except Exception as e:
@@ -129,10 +132,6 @@ async def root():
 # Route Imports & Registration
 # ============================================================================
 
-from app.api import prospects_router, messages_router, monitoring_router
-from fastapi.responses import FileResponse
-import os
-
 app.include_router(
     prospects_router, prefix="/api", tags=["prospects"], dependencies=[Depends(require_api_key)]
 )
@@ -146,6 +145,7 @@ app.include_router(
 # Base directory for static files (extracted to avoid duplication)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+
 @app.get("/dashboard")
 async def serve_dashboard():
     """Serve main dashboard"""
@@ -154,6 +154,7 @@ async def serve_dashboard():
         return FileResponse(dashboard_path, media_type="text/html")
     logger.error(f"Dashboard not found at {dashboard_path}")
     raise HTTPException(status_code=404, detail="Dashboard not found")
+
 
 @app.get("/dashboard-summary")
 async def serve_dashboard_summary():

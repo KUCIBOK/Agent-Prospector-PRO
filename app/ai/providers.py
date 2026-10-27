@@ -8,10 +8,9 @@ All AI decisions go through this abstraction so we can:
 - Test with mock providers
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Optional
 import json
 import logging
+from abc import ABC, abstractmethod
 
 import requests
 
@@ -26,22 +25,18 @@ class AIProvider(ABC):
     @abstractmethod
     def analyze(self, payload: dict) -> dict:
         """Analyze data and return structured result."""
-        pass
 
     @abstractmethod
     def extract(self, text: str, schema: dict) -> dict:
         """Extract structured data from text using schema."""
-        pass
 
     @abstractmethod
     def classify(self, payload: dict) -> str:
         """Classify data into a category."""
-        pass
 
     @abstractmethod
     def summarize(self, text: str, max_length: int = 200) -> str:
         """Summarize text."""
-        pass
 
 
 class OllamaProvider(AIProvider):
@@ -54,7 +49,7 @@ class OllamaProvider(AIProvider):
         logger.info(f"✅ Ollama provider initialized: {model_name} @ {host}")
 
     def _call_ollama(
-        self, prompt: str, json_mode: bool = False, temperature: Optional[float] = None
+        self, prompt: str, json_mode: bool = False, temperature: float | None = None
     ) -> str:
         """Call Ollama API and return response."""
         try:
@@ -80,7 +75,7 @@ class OllamaProvider(AIProvider):
             return result.get("response", "")
 
         except Exception as e:
-            logger.error(f"❌ Ollama API error: {str(e)}")
+            logger.error(f"❌ Ollama API error: {e!s}")
             raise
 
     def analyze(self, payload: dict) -> dict:
@@ -182,8 +177,8 @@ Return ONLY valid JSON matching the schema:"""
             return json.loads(json_str)
 
         except json.JSONDecodeError:
-            logger.error(f"Failed to parse extraction response as JSON")
-            return {field: "UNKNOWN" for field in schema.keys()}
+            logger.error("Failed to parse extraction response as JSON")
+            return {field: "UNKNOWN" for field in schema}
 
     def classify(self, payload: dict) -> str:
         """Classify data into a category."""
@@ -227,7 +222,7 @@ class MockProvider(AIProvider):
         }
 
     def extract(self, text: str, schema: dict) -> dict:
-        return {field: "MOCK" for field in schema.keys()}
+        return {field: "MOCK" for field in schema}
 
     def classify(self, payload: dict) -> str:
         return "UNKNOWN"

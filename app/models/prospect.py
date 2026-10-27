@@ -2,11 +2,10 @@
 Prospect model — artists and clients (curators, advisors, galleries).
 """
 
-from datetime import datetime
-from typing import Optional
-
-from sqlmodel import Field, SQLModel, Column, String, Enum as SQLEnum
 import enum
+from datetime import datetime
+
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -86,35 +85,35 @@ class Prospect(BaseModel, table=True):
         last_verified_at: Last time data was verified/updated
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     type: ProspectType = Field(index=True)
     name: str = Field(index=True)
     country: str = Field(index=True)
-    city: Optional[str] = None
-    website: Optional[str] = Field(default=None, unique=True, index=True)
-    email: Optional[str] = Field(default=None, unique=True, index=True)
-    linkedin: Optional[str] = Field(default=None, unique=True)
-    instagram: Optional[str] = Field(default=None, unique=True)
-    description: Optional[str] = None
-    specialty: Optional[str] = None
+    city: str | None = None
+    website: str | None = Field(default=None, unique=True, index=True)
+    email: str | None = Field(default=None, unique=True, index=True)
+    linkedin: str | None = Field(default=None, unique=True)
+    instagram: str | None = Field(default=None, unique=True)
+    description: str | None = None
+    specialty: str | None = None
 
     # Data quality & interest signals
-    africa_interest: Optional[str] = None  # "HIGH", "MEDIUM", "LOW", "UNKNOWN"
-    international_activity: Optional[str] = None
-    digital_maturity: Optional[str] = None
+    africa_interest: str | None = None  # "HIGH", "MEDIUM", "LOW", "UNKNOWN"
+    international_activity: str | None = None
+    digital_maturity: str | None = None
 
     # Status & classification
     status: ProspectStatus = Field(default=ProspectStatus.IDENTIFIED, index=True)
     score: float = Field(default=0.0, ge=0.0, le=100.0)
     confidence: ConfidenceLevel = Field(default=ConfidenceLevel.LOW, index=True)
-    priority: Optional[Priority] = Field(default=None, index=True)
+    priority: Priority | None = Field(default=None, index=True)
 
     # Outreach
-    recommended_angle: Optional[RecommendedAngle] = None
-    reason_to_contact: Optional[str] = None  # JSON: {why, why_now, what}
+    recommended_angle: RecommendedAngle | None = None
+    reason_to_contact: str | None = None  # JSON: {why, why_now, what}
 
     # Audit
-    last_verified_at: Optional[datetime] = None
+    last_verified_at: datetime | None = None
 
     # Timestamps (from TimestampMixin)
     # created_at: datetime

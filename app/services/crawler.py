@@ -17,17 +17,16 @@ Respects:
 """
 
 import logging
-import time
-from urllib.robotparser import RobotFileParser
-from datetime import datetime, timezone
-from typing import Optional
-from urllib.parse import urljoin, urlparse
 import re
+import time
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+from urllib.robotparser import RobotFileParser
 
 import requests
 from bs4 import BeautifulSoup
 
-from app.models import Prospect, Source, SourceType
+from app.models import Prospect
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +50,7 @@ class Crawler:
 
     def __init__(self):
         self.session = requests.Session()
-        self.headers = {
-            "User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"
-        }
+        self.headers = {"User-Agent": "Kucibok-Prospector/1.1 (+http://kucibok.com/bot)"}
         self.session.headers.update(self.headers)
         self.timeout = 30
         self.last_request_time = {}  # Track per-domain rate limiting
@@ -88,7 +85,7 @@ class Crawler:
             return True
 
         except Exception as e:
-            logger.warning(f"Could not check robots.txt: {str(e)}")
+            logger.warning(f"Could not check robots.txt: {e!s}")
             return True  # Assume allowed if error
 
     def crawl_website(self, url: str) -> CrawlResult:
@@ -176,7 +173,7 @@ class Crawler:
             # Extract about/bio (look for common sections)
             about_text = ""
             for tag_name in ["about", "bio", "artist-statement", "statement"]:
-                element = soup.find(id=re.compile(tag_name, re.I))
+                element = soup.find(id=re.compile(tag_name, re.IGNORECASE))
                 if element:
                     about_text = element.get_text()[:500]
                     break
@@ -191,11 +188,11 @@ class Crawler:
             return CrawlResult(url, "TIMEOUT", error="Request timeout (30s)")
 
         except requests.RequestException as e:
-            logger.error(f"Request error: {url} — {str(e)}")
+            logger.error(f"Request error: {url} — {e!s}")
             return CrawlResult(url, "ERROR", error=str(e))
 
         except Exception as e:
-            logger.error(f"Crawl error: {url} — {str(e)}")
+            logger.error(f"Crawl error: {url} — {e!s}")
             return CrawlResult(url, "ERROR", error=str(e))
 
     def crawl_instagram(self, handle: str) -> CrawlResult:

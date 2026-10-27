@@ -10,14 +10,12 @@ Analyzes:
 - Recommended angle
 """
 
-import json
 import logging
-from typing import Optional
 
 from sqlmodel import Session
 
-from app.models import Prospect, AIAnalysis
 from app.ai.providers import AIProvider
+from app.models import AIAnalysis, Prospect
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +31,11 @@ class AnalysisService:
         """
         Determine Africa interest level: HIGH / MEDIUM / LOW / UNKNOWN
         """
-        if prospect.africa_interest and prospect.africa_interest.upper() in ["HIGH", "MEDIUM", "LOW"]:
+        if prospect.africa_interest and prospect.africa_interest.upper() in [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+        ]:
             return prospect.africa_interest
 
         # Check description, specialty for clues
@@ -54,7 +56,11 @@ class AnalysisService:
         """
         Determine international activity level: HIGH / MEDIUM / LOW / UNKNOWN
         """
-        if prospect.international_activity and prospect.international_activity.upper() in ["HIGH", "MEDIUM", "LOW"]:
+        if prospect.international_activity and prospect.international_activity.upper() in [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+        ]:
             return prospect.international_activity
 
         # Check for international indicators
@@ -82,7 +88,11 @@ class AnalysisService:
         """
         Determine digital maturity: HIGH / MEDIUM / LOW / UNKNOWN
         """
-        if prospect.digital_maturity and prospect.digital_maturity.upper() in ["HIGH", "MEDIUM", "LOW"]:
+        if prospect.digital_maturity and prospect.digital_maturity.upper() in [
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+        ]:
             return prospect.digital_maturity
 
         # Count digital touchpoints
@@ -160,11 +170,13 @@ class AnalysisService:
 
         # WHY
         if analysis["africa_interest"] in ["HIGH", "MEDIUM"]:
-            why = f"You specialize in African art and we connect curators with verified African artists."
+            why = "You specialize in African art and we connect curators with verified African artists."
         elif prospect.type.value == "GALLERY":
             why = "You're a gallery that could benefit from sourcing African artists."
         elif prospect.type.value == "ART_ADVISOR":
-            why = "As an art advisor, you likely work with collectors interested in contemporary art."
+            why = (
+                "As an art advisor, you likely work with collectors interested in contemporary art."
+            )
         else:
             why = f"Your background in {prospect.specialty or 'art'} aligns with our network."
 
@@ -172,7 +184,9 @@ class AnalysisService:
         if analysis["international_activity"] in ["HIGH", "MEDIUM"]:
             why_now = "We help international art professionals access African artists efficiently."
         else:
-            why_now = "There's a growing demand for African contemporary art in international markets."
+            why_now = (
+                "There's a growing demand for African contemporary art in international markets."
+            )
 
         # WHAT
         if prospect.type.value == "CURATOR":
@@ -227,8 +241,9 @@ class AnalysisService:
 
         Returns: {analyzed: N, total: N}
         """
-        from app.models import ProspectStatus
         from sqlmodel import select
+
+        from app.models import ProspectStatus
 
         logger.info(f"🧠 Batch analyzing prospects (limit: {limit})...")
 
@@ -245,6 +260,7 @@ class AnalysisService:
             try:
                 # Only analyze if not already analyzed
                 from sqlmodel import select
+
                 existing = self.session.exec(
                     select(AIAnalysis)
                     .where(AIAnalysis.prospect_id == prospect.id)
@@ -252,11 +268,11 @@ class AnalysisService:
                 ).first()
 
                 if not existing:
-                    analysis = self.analyze_prospect(prospect)
+                    self.analyze_prospect(prospect)
                     analyzed += 1
 
             except Exception as e:
-                logger.error(f"Error analyzing {prospect.name}: {str(e)}")
+                logger.error(f"Error analyzing {prospect.name}: {e!s}")
 
         logger.info(f"✅ Batch analysis complete: {analyzed}/{len(prospects)} prospects analyzed")
         return {

@@ -1,9 +1,8 @@
 """Tests for discovery service."""
 
-import pytest
 from sqlmodel import Session
 
-from app.models import Prospect, ProspectType
+from app.models import ProspectType
 from app.services.discovery import DiscoveryEngine, SearchQuery
 
 

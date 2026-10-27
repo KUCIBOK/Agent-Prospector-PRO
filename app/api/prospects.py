@@ -2,20 +2,19 @@
 Prospect routes — CRUD operations and discovery.
 """
 
-from typing import Optional
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlmodel import select, func
+from sqlmodel import func, select
 
 from app.db import get_session
-from app.models import Prospect, ProspectType, ProspectStatus, Priority
+from app.models import Priority, Prospect, ProspectStatus, ProspectType
 from app.schemas import (
     ProspectCreate,
-    ProspectUpdate,
     ProspectResponse,
     ProspectsListResponse,
+    ProspectUpdate,
 )
 from app.services.deep_google_source import DeepGoogleSource
 
@@ -28,11 +27,11 @@ def list_prospects(
     session: Session = Depends(get_session),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    prospect_type: Optional[ProspectType] = None,
-    status: Optional[ProspectStatus] = None,
-    priority: Optional[Priority] = None,
-    country: Optional[str] = None,
-    search: Optional[str] = None,
+    prospect_type: ProspectType | None = None,
+    status: ProspectStatus | None = None,
+    priority: Priority | None = None,
+    country: str | None = None,
+    search: str | None = None,
 ) -> ProspectsListResponse:
     """
     List prospects with filtering and pagination.
@@ -104,7 +103,9 @@ def create_prospect(
                 select(Prospect).where(Prospect.email == prospect_in.email)
             ).first()
             if existing:
-                raise HTTPException(status_code=409, detail="Prospect with this email already exists")
+                raise HTTPException(
+                    status_code=409, detail="Prospect with this email already exists"
+                )
 
         # Create prospect
         prospect = Prospect(**prospect_in.model_dump())
@@ -119,9 +120,9 @@ def create_prospect(
         # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        logger.error(f"❌ Error creating prospect: {str(e)}", exc_info=True)
+        logger.error(f"❌ Error creating prospect: {e!s}", exc_info=True)
         # Server errors (DB, validation) should return 500, not 400
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e!s}") from e
 
 
 @router.patch("/{prospect_id}", response_model=ProspectResponse)
@@ -229,15 +230,17 @@ def deep_source_curators(
         # Convert prospects to response format
         prospects_response = []
         for prospect in results.get("prospects", []):
-            prospects_response.append({
-                "id": prospect.id,
-                "name": prospect.name,
-                "type": str(prospect.type),
-                "email": prospect.email,
-                "website": prospect.website,
-                "description": prospect.description,
-                "country": prospect.country,
-            })
+            prospects_response.append(
+                {
+                    "id": prospect.id,
+                    "name": prospect.name,
+                    "type": str(prospect.type),
+                    "email": prospect.email,
+                    "website": prospect.website,
+                    "description": prospect.description,
+                    "country": prospect.country,
+                }
+            )
 
         response = {
             "created": results["created"],
@@ -251,14 +254,16 @@ def deep_source_curators(
                 "2. System will auto-enrich profiles (24h)",
                 "3. Auto-score prospects (SaaS Fit, Priority P1-P4)",
                 "4. Auto-send 'Sourcing & Vetting' emails to P1-P2",
-                "5. Follow-ups scheduled (days 3, 7, 14)"
-            ]
+                "5. Follow-ups scheduled (days 3, 7, 14)",
+            ],
         }
 
-        logger.info(f"✅ Deep source complete: {results['created']} created, {results['duplicates']} duplicates")
+        logger.info(
+            f"✅ Deep source complete: {results['created']} created, {results['duplicates']} duplicates"
+        )
 
         return response
 
     except Exception as e:
-        logger.error(f"❌ Deep sourcing failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Deep sourcing failed: {str(e)}")
+        logger.error(f"❌ Deep sourcing failed: {e!s}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Deep sourcing failed: {e!s}") from e

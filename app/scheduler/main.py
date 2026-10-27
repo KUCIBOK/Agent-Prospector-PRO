@@ -10,15 +10,14 @@ Configurable via .env:
 """
 
 import logging
-from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.config import settings
 from app.workers.tasks import (
-    run_discovery,
     run_crawling,
+    run_discovery,
     run_enrichment,
     run_scoring,
 )
@@ -92,6 +91,7 @@ if __name__ == "__main__":
     try:
         # Keep scheduler running
         import time
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

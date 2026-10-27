@@ -3,11 +3,10 @@ Job monitoring schemas.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models import JobType, JobStatus
+from app.models import JobStatus, JobType
 
 
 class JobResponse(BaseModel):
@@ -17,9 +16,9 @@ class JobResponse(BaseModel):
     job_type: JobType
     status: JobStatus
     attempts: int
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    error_message: Optional[str]
+    started_at: datetime | None
+    completed_at: datetime | None
+    error_message: str | None
     result_count: int
     created_at: datetime
 
@@ -47,8 +46,8 @@ class MonitoringResponse(BaseModel):
     total_artists: int
     total_clients: int
     jobs: JobsListResponse
-    last_discovery: Optional[datetime]
-    last_scoring: Optional[datetime]
-    last_outreach_generation: Optional[datetime]
+    last_discovery: datetime | None
+    last_scoring: datetime | None
+    last_outreach_generation: datetime | None
     database_size_mb: float
     cache_size_mb: float

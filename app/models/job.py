@@ -2,11 +2,10 @@
 Job model — tracks async job execution.
 """
 
+import enum
 from datetime import datetime
-from typing import Optional
 
 from sqlmodel import Field
-import enum
 
 from app.models.base import BaseModel
 
@@ -50,11 +49,11 @@ class Job(BaseModel, table=True):
         result_count: Number of items processed
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     job_type: JobType = Field(index=True)
     status: JobStatus = Field(default=JobStatus.PENDING, index=True)
     attempts: int = Field(default=0, ge=0, le=3)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    error_message: str | None = None
     result_count: int = Field(default=0)

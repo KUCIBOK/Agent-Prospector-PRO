@@ -7,14 +7,13 @@ requests, unless DEBUG=true (local development only).
 """
 
 import hmac
-from typing import Optional
 
 from fastapi import Header, HTTPException, status
 
 from app.config import settings
 
 
-def require_api_key(x_api_key: Optional[str] = Header(default=None)) -> None:
+def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
     if not settings.api_key:
         if settings.debug:
             return

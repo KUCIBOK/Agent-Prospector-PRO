@@ -3,9 +3,8 @@ Base models and utilities for SQLModel.
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 
 class TimestampMixin:
@@ -17,5 +16,3 @@ class TimestampMixin:
 
 class BaseModel(SQLModel, TimestampMixin):
     """Base model for all database models."""
-
-    pass

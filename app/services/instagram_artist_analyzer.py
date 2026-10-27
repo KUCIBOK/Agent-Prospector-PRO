@@ -20,16 +20,13 @@ Free approach: BeautifulSoup + requests (respects rate limits).
 
 import logging
 import os
-from typing import Optional, List
-from datetime import datetime, timedelta, timezone
-import re
+from datetime import datetime, timezone
 
-from sqlmodel import Session, select
 import requests
-from bs4 import BeautifulSoup
+from sqlmodel import Session, select
 
-from app.models import Prospect, ProspectType, Signal, SignalType
 from app.db import SessionLocal
+from app.models import Prospect, ProspectType, Signal, SignalType
 
 logger = logging.getLogger(__name__)
 
@@ -90,10 +87,10 @@ class InstagramArtistAnalyzer:
             return data
 
         except Exception as e:
-            logger.error(f"Error analyzing {prospect.instagram}: {str(e)}")
+            logger.error(f"Error analyzing {prospect.instagram}: {e!s}")
             return {"error": str(e)}
 
-    def _fetch_instagram_api(self, username: str) -> Optional[dict]:
+    def _fetch_instagram_api(self, username: str) -> dict | None:
         """
         Use Instagram Business API (requires setup).
 
@@ -104,7 +101,7 @@ class InstagramArtistAnalyzer:
         """
         try:
             # Get Instagram user ID from username
-            url = f"https://graph.instagram.com/ig_hashtag_search"
+            url = "https://graph.instagram.com/ig_hashtag_search"
             params = {
                 "user_id": os.getenv("INSTAGRAM_BUSINESS_ACCOUNT_ID"),
                 "fields": "username,name,profile_picture_url,followers_count,media_count",
@@ -120,10 +117,10 @@ class InstagramArtistAnalyzer:
                 return None
 
         except Exception as e:
-            logger.error(f"Instagram API error: {str(e)}")
+            logger.error(f"Instagram API error: {e!s}")
             return None
 
-    def _scrape_instagram_public(self, username: str) -> Optional[dict]:
+    def _scrape_instagram_public(self, username: str) -> dict | None:
         """
         Scrape public Instagram profile (respectful scraping).
 
@@ -177,7 +174,7 @@ class InstagramArtistAnalyzer:
             return data
 
         except Exception as e:
-            logger.error(f"Error scraping Instagram: {str(e)}")
+            logger.error(f"Error scraping Instagram: {e!s}")
             return None
 
     def _analyze_quality(self, data: dict) -> dict:
@@ -288,7 +285,7 @@ class InstagramArtistAnalyzer:
             "bio_keywords": self._extract_keywords(bio),
         }
 
-    def _extract_keywords(self, bio: str) -> List[str]:
+    def _extract_keywords(self, bio: str) -> list[str]:
         """Extract relevant keywords from bio."""
         art_keywords = [
             "contemporary",
@@ -316,7 +313,7 @@ class InstagramArtistAnalyzer:
 
         return keywords
 
-    def bulk_analyze_artists(self) -> List[dict]:
+    def bulk_analyze_artists(self) -> list[dict]:
         """
         Analyze all artists in database with Instagram profiles.
 
@@ -324,7 +321,7 @@ class InstagramArtistAnalyzer:
         """
         artists = self.session.exec(
             select(Prospect).where(
-                (Prospect.type == ProspectType.ARTIST) & (Prospect.instagram != None)
+                (Prospect.type == ProspectType.ARTIST) & (Prospect.instagram.is_not(None))
             )
         ).all()
 
@@ -351,7 +348,9 @@ class InstagramArtistAnalyzer:
                         f"{analysis.get('engagement_rate', 0):.1f}% engagement",
                         source_url=f"https://instagram.com/{artist.instagram}",
                         signal_date=datetime.now(timezone.utc),
-                        importance="HIGH" if analysis.get("maturity_level") == "ESTABLISHED" else "MEDIUM",
+                        importance=(
+                            "HIGH" if analysis.get("maturity_level") == "ESTABLISHED" else "MEDIUM"
+                        ),
                         confidence="HIGH",
                     )
                     self.session.add(signal)

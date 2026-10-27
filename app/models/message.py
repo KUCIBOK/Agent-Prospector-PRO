@@ -2,11 +2,10 @@
 Message model — outreach messages for LinkedIn.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
-
-from sqlmodel import Field, ForeignKey
 import enum
+from datetime import datetime, timezone
+
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -59,7 +58,7 @@ class Message(BaseModel, table=True):
         model_version: AI model that generated it
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prospect_id: int = Field(foreign_key="prospect.id", index=True)
     persona: str = Field(index=True)  # ART_ADVISOR or CURATOR
     variant_label: str
@@ -68,5 +67,5 @@ class Message(BaseModel, table=True):
     status: MessageStatus = Field(default=MessageStatus.DRAFT, index=True)
     outcome: MessageOutcome = Field(default=MessageOutcome.NONE, index=True)
     generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    sent_at: Optional[datetime] = None
+    sent_at: datetime | None = None
     model_version: str = Field(default="1.0")

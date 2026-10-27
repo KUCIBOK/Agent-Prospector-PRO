@@ -10,14 +10,13 @@ Supports:
 
 import logging
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import Optional
 from datetime import datetime, timedelta, timezone
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.models import Prospect, Message, MessageStatus, MessageOutcome
+from app.models import Message, MessageStatus, Prospect
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class EmailConfig:
 class EmailService:
     """Email sending and follow-up management."""
 
-    def __init__(self, session: Session, config: Optional[EmailConfig] = None):
+    def __init__(self, session: Session, config: EmailConfig | None = None):
         self.session = session
         self.config = config
         self.logger = logger
@@ -57,8 +56,8 @@ class EmailService:
         to_email: str,
         subject: str,
         html_body: str,
-        text_body: Optional[str] = None,
-        prospect_id: Optional[int] = None,
+        text_body: str | None = None,
+        prospect_id: int | None = None,
     ) -> bool:
         """
         Send an email.
@@ -99,7 +98,7 @@ class EmailService:
             return True
 
         except Exception as e:
-            self.logger.error(f"❌ Failed to send email: {str(e)}")
+            self.logger.error(f"❌ Failed to send email: {e!s}")
             return False
 
     def send_message_email(
@@ -145,7 +144,7 @@ class EmailService:
 
         Returns: (subject, html_body)
         """
-        subject = f"Rejoignez Kucibok — Plateforme pour artistes africains"
+        subject = "Rejoignez Kucibok — Plateforme pour artistes africains"
 
         html_body = f"""
         <html>
@@ -258,11 +257,13 @@ class EmailService:
             scheduled_date = base_date + timedelta(days=days)
 
             # TODO: Create scheduled task in database
-            follow_ups.append({
-                "prospect_id": prospect.id,
-                "days": days,
-                "scheduled_date": scheduled_date,
-            })
+            follow_ups.append(
+                {
+                    "prospect_id": prospect.id,
+                    "days": days,
+                    "scheduled_date": scheduled_date,
+                }
+            )
 
         self.logger.info(f"Scheduled {len(follow_ups)} follow-ups for {prospect.name}")
         return follow_ups
@@ -312,13 +313,11 @@ class EmailService:
                     failed += 1
 
             except Exception as e:
-                self.logger.error(f"Error sending to {prospect.name}: {str(e)}")
+                self.logger.error(f"Error sending to {prospect.name}: {e!s}")
                 failed += 1
                 errors.append((prospect.name, str(e)))
 
-        self.logger.info(
-            f"✅ Sent {sent}/{len(prospects)} emails ({failed} failed)"
-        )
+        self.logger.info(f"✅ Sent {sent}/{len(prospects)} emails ({failed} failed)")
         return {
             "total": len(prospects),
             "sent": sent,
@@ -333,7 +332,7 @@ class EmailService:
             subject = f"Bienvenue sur Kucibok — {prospect.name}!"
             body = f"<p>Bonjour {prospect.name},</p><p>Bienvenue!</p>"
         elif template == "follow_up_3days":
-            subject = f"Vous aviez raison de nous faire confiance"
+            subject = "Vous aviez raison de nous faire confiance"
             body = f"<p>Bonjour {prospect.name},</p><p>Suivi après 3 jours...</p>"
         else:
             subject = "Kucibok"

@@ -10,7 +10,6 @@ Supports:
 """
 
 import logging
-from typing import Optional, List
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -18,8 +17,8 @@ from sqlmodel import Session
 
 from app.models import (
     Prospect,
-    ProspectType,
     ProspectStatus,
+    ProspectType,
     Source,
     SourceType,
 )
@@ -100,7 +99,7 @@ class ExcelImporter:
             logger.info(f"📋 Loaded {len(df)} rows from Excel")
 
         except Exception as e:
-            logger.error(f"❌ Failed to read Excel: {str(e)}")
+            logger.error(f"❌ Failed to read Excel: {e!s}")
             return {
                 "total_rows": 0,
                 "imported": 0,
@@ -124,9 +123,7 @@ class ExcelImporter:
 
             try:
                 # Convert row to dict
-                row_dict = {
-                    k: v for k, v in row.to_dict().items() if pd.notna(v)
-                }
+                row_dict = {k: v for k, v in row.to_dict().items() if pd.notna(v)}
 
                 # Validate
                 is_valid, validation_errors = self.validate_row(row_dict)
@@ -143,15 +140,10 @@ class ExcelImporter:
 
                 if skip_duplicates:
                     from sqlmodel import select
+
                     existing = self.session.exec(
-                        select(Prospect).where(
-                            (Prospect.name == name) if name else False
-                        )
-                        | (
-                            (Prospect.email == email)
-                            if email and pd.notna(email)
-                            else False
-                        )
+                        select(Prospect).where((Prospect.name == name) if name else False)
+                        | ((Prospect.email == email) if email and pd.notna(email) else False)
                         | (
                             (Prospect.website == website)
                             if website and pd.notna(website)
@@ -197,7 +189,7 @@ class ExcelImporter:
                 logger.info(f"✅ Imported: {name}")
 
             except Exception as e:
-                logger.error(f"Error processing row {row_num}: {str(e)}")
+                logger.error(f"Error processing row {row_num}: {e!s}")
                 errors.append((row_num, str(e)))
                 skipped += 1
 
@@ -216,7 +208,7 @@ class ExcelImporter:
 
     def export_prospects_to_excel(
         self,
-        prospects: List[Prospect],
+        prospects: list[Prospect],
         filepath: str,
         include_scores: bool = True,
     ) -> bool:
@@ -260,5 +252,5 @@ class ExcelImporter:
             return True
 
         except Exception as e:
-            logger.error(f"❌ Export failed: {str(e)}")
+            logger.error(f"❌ Export failed: {e!s}")
             return False

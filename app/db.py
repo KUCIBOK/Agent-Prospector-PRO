@@ -3,11 +3,11 @@ Database connection and session management.
 """
 
 import logging
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel, Session
+from sqlmodel import Session, SQLModel
 
 from app.config import settings
 

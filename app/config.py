@@ -3,7 +3,6 @@ Application configuration — loaded from environment variables.
 """
 
 import os
-from typing import Optional
 
 from pydantic_settings import BaseSettings
 
@@ -69,9 +68,7 @@ class Settings(BaseSettings):
     crawler_respect_robots_txt: bool = (
         os.getenv("CRAWLER_RESPECT_ROBOTS_TXT", "true").lower() == "true"
     )
-    crawler_follow_redirects: bool = (
-        os.getenv("CRAWLER_FOLLOW_REDIRECTS", "true").lower() == "true"
-    )
+    crawler_follow_redirects: bool = os.getenv("CRAWLER_FOLLOW_REDIRECTS", "true").lower() == "true"
 
     # ========================================================================
     # Outreach Engine
@@ -79,7 +76,7 @@ class Settings(BaseSettings):
     outreach_enabled: bool = os.getenv("OUTREACH_ENABLED", "true").lower() == "true"
     outreach_min_priority: str = os.getenv("OUTREACH_MIN_PRIORITY", "P2")
     outreach_min_confidence: str = os.getenv("OUTREACH_MIN_CONFIDENCE", "MEDIUM")
-    linkedin_account_url: Optional[str] = os.getenv("LINKEDIN_ACCOUNT_URL")
+    linkedin_account_url: str | None = os.getenv("LINKEDIN_ACCOUNT_URL")
 
     # ========================================================================
     # Artist Onboarding (Instagram)
@@ -87,9 +84,9 @@ class Settings(BaseSettings):
     artist_onboarding_enabled: bool = (
         os.getenv("ARTIST_ONBOARDING_ENABLED", "true").lower() == "true"
     )
-    instagram_business_account_id: Optional[str] = os.getenv("INSTAGRAM_BUSINESS_ACCOUNT_ID")
-    instagram_access_token: Optional[str] = os.getenv("INSTAGRAM_ACCESS_TOKEN")
-    instagram_webhook_verify_token: Optional[str] = os.getenv("INSTAGRAM_WEBHOOK_VERIFY_TOKEN")
+    instagram_business_account_id: str | None = os.getenv("INSTAGRAM_BUSINESS_ACCOUNT_ID")
+    instagram_access_token: str | None = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+    instagram_webhook_verify_token: str | None = os.getenv("INSTAGRAM_WEBHOOK_VERIFY_TOKEN")
     instagram_api_version: str = os.getenv("INSTAGRAM_API_VERSION", "v18.0")
 
     # ========================================================================
@@ -126,7 +123,7 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = False
         env_file = ".env"
-        extra = 'ignore'  # Ignore extra fields from .env
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 # Global settings instance

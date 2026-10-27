@@ -2,11 +2,10 @@
 Signal model — intent signals (expositions, opportunities, etc.).
 """
 
-from datetime import datetime
-from typing import Optional
-
-from sqlmodel import Field, ForeignKey
 import enum
+from datetime import datetime
+
+from sqlmodel import Field
 
 from app.models.base import BaseModel
 
@@ -72,11 +71,11 @@ class Signal(BaseModel, table=True):
         confidence: Data confidence
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     prospect_id: int = Field(foreign_key="prospect.id", index=True)
     signal_type: SignalType = Field(index=True)
     description: str
-    source_url: Optional[str] = None
+    source_url: str | None = None
     signal_date: datetime = Field(index=True)
     importance: Importance = Field(default=Importance.MEDIUM)
     confidence: Confidence = Field(default=Confidence.MEDIUM)

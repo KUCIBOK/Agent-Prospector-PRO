@@ -1,6 +1,5 @@
 """Tests for outreach service."""
 
-import pytest
 from app.models import Prospect, ProspectType, ConfidenceLevel
 from app.services.outreach import (
     detect_persona,

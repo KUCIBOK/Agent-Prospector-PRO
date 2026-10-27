@@ -9,18 +9,18 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlmodel import select, func
+from sqlmodel import func, select
 
 from app.db import get_session
 from app.models import (
-    Prospect,
-    ProspectType,
     Job,
     JobStatus,
     Message,
+    Prospect,
+    ProspectType,
     Signal,
 )
-from app.schemas import JobResponse, JobsListResponse, MonitoringResponse
+from app.schemas import JobResponse, JobsListResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
@@ -54,10 +54,18 @@ def list_jobs(
     jobs = session.exec(query).all()
 
     # Count by status
-    pending = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.PENDING))
-    running = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.RUNNING))
-    success = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.SUCCESS))
-    failed = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED))
+    pending = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.PENDING)
+    )
+    running = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.RUNNING)
+    )
+    success = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.SUCCESS)
+    )
+    failed = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED)
+    )
 
     return JobsListResponse(
         total=len(jobs),
@@ -115,11 +123,19 @@ def prospect_stats(session: Session = Depends(get_session)):
 def message_stats(session: Session = Depends(get_session)):
     """Get message statistics."""
     total = session.scalar(select(func.count()).select_from(Message))
-    draft = session.scalar(select(func.count()).select_from(Message).where(Message.status == "DRAFT"))
+    draft = session.scalar(
+        select(func.count()).select_from(Message).where(Message.status == "DRAFT")
+    )
     sent = session.scalar(select(func.count()).select_from(Message).where(Message.status == "SENT"))
-    replied = session.scalar(select(func.count()).select_from(Message).where(Message.outcome == "REPLIED"))
-    meeting = session.scalar(select(func.count()).select_from(Message).where(Message.outcome == "MEETING"))
-    customer = session.scalar(select(func.count()).select_from(Message).where(Message.outcome == "CUSTOMER"))
+    replied = session.scalar(
+        select(func.count()).select_from(Message).where(Message.outcome == "REPLIED")
+    )
+    meeting = session.scalar(
+        select(func.count()).select_from(Message).where(Message.outcome == "MEETING")
+    )
+    customer = session.scalar(
+        select(func.count()).select_from(Message).where(Message.outcome == "CUSTOMER")
+    )
 
     return {
         "total": total or 0,
@@ -230,14 +246,21 @@ def summary(session: Session = Depends(get_session)):
     clients = prospects_total - artists if prospects_total else 0
 
     messages_total = session.scalar(select(func.count()).select_from(Message))
-    messages_draft = session.scalar(select(func.count()).select_from(Message).where(Message.status == "DRAFT"))
-    messages_sent = session.scalar(select(func.count()).select_from(Message).where(Message.status == "SENT"))
+    messages_draft = session.scalar(
+        select(func.count()).select_from(Message).where(Message.status == "DRAFT")
+    )
+    messages_sent = session.scalar(
+        select(func.count()).select_from(Message).where(Message.status == "SENT")
+    )
 
     jobs_total = session.scalar(select(func.count()).select_from(Job))
-    jobs_failed = session.scalar(select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED))
+    jobs_failed = session.scalar(
+        select(func.count()).select_from(Job).where(Job.status == JobStatus.FAILED)
+    )
 
     # NEW: Count recent signals (last 7 days)
     from datetime import timedelta
+
     recent_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     recent_signals = session.scalar(
         select(func.count()).select_from(Signal).where(Signal.signal_date >= recent_cutoff)

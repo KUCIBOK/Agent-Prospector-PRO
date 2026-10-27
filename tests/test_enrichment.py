@@ -1,6 +1,5 @@
 """Tests for enrichment service."""
 
-import pytest
 from sqlmodel import Session
 
 from app.models import Prospect, ProspectType
