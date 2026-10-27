@@ -89,3 +89,6 @@ Thumbs.db
 # Secrets: never commit real environment files (only .env.example)
 .env.*
 !.env.example
+
+# Working directory of scripts/purge_history.sh (contains old history)
+history-purge/
