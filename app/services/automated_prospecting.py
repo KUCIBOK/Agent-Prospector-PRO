@@ -12,7 +12,7 @@ Features:
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 import time
 
@@ -254,7 +254,7 @@ class AutomatedProspectingEngine:
                     url=source_url,
                     source_type=source_type,
                     title="Auto-scraped",
-                    captured_at=datetime.utcnow(),
+                    captured_at=datetime.now(timezone.utc),
                 )
                 self.session.add(source)
                 self.session.commit()

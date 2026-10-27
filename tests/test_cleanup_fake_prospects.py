@@ -52,7 +52,9 @@ def test_candidates_and_protections(session):
     session.add_all([fake, sourced, verified, contacted, kept])
     session.commit()
 
-    session.add(Source(prospect_id=sourced.id, url="https://example.org", source_type=SourceType.WEBSITE))
+    session.add(
+        Source(prospect_id=sourced.id, url="https://example.org", source_type=SourceType.WEBSITE)
+    )
     session.add(
         Message(
             prospect_id=contacted.id,

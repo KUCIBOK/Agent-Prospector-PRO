@@ -12,7 +12,7 @@ Implements the Kucibok Bridge Playbook:
 import logging
 from typing import Optional, Dict, List
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
@@ -333,7 +333,7 @@ class KucibokBridgeOutreach:
             return None
 
         # Schedule follow-up
-        followup_date = datetime.utcnow() + timedelta(days=days_delay)
+        followup_date = datetime.now(timezone.utc) + timedelta(days=days_delay)
 
         return followup_date
 
@@ -382,7 +382,7 @@ class KucibokBridgeOutreach:
             status=MessageStatus.SENT,
             subject=f"Sourcing & Vetting - {prospect.name}",
             body=message,
-            sent_at=datetime.utcnow(),
+            sent_at=datetime.now(timezone.utc),
         )
 
         self.session.add(msg)

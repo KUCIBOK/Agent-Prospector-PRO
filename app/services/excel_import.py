@@ -11,7 +11,7 @@ Supports:
 
 import logging
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 from sqlmodel import Session
@@ -188,7 +188,7 @@ class ExcelImporter:
                     url=filepath,
                     source_type=SourceType.OTHER,
                     title="Excel Import",
-                    captured_at=datetime.utcnow(),
+                    captured_at=datetime.now(timezone.utc),
                 )
                 self.session.add(source)
                 self.session.commit()

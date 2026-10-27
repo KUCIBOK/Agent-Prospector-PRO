@@ -5,7 +5,7 @@ Monitoring routes — system health and job status.
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -34,7 +34,7 @@ def health_check():
     """Simple health check."""
     return {
         "status": "ok",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": int(time.time() - START_TIME),
     }
 
@@ -140,7 +140,7 @@ def system_info():
     """Get system information."""
     return {
         "uptime_seconds": int(time.time() - START_TIME),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "environment": os.getenv("ENVIRONMENT", "production"),
         "debug": os.getenv("DEBUG", "false").lower() == "true",
     }
@@ -194,7 +194,7 @@ def recent_signals(
     """Get recently detected intent signals."""
     from datetime import timedelta
 
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     signals = session.exec(
         select(Signal)
         .where(Signal.signal_date >= cutoff)
@@ -238,7 +238,7 @@ def summary(session: Session = Depends(get_session)):
 
     # NEW: Count recent signals (last 7 days)
     from datetime import timedelta
-    recent_cutoff = datetime.utcnow() - timedelta(days=7)
+    recent_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     recent_signals = session.scalar(
         select(func.count()).select_from(Signal).where(Signal.signal_date >= recent_cutoff)
     )

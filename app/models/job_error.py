@@ -2,7 +2,7 @@
 Job error model — detailed error logging.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import Field, ForeignKey
@@ -25,4 +25,4 @@ class JobError(BaseModel, table=True):
     job_id: int = Field(foreign_key="job.id", index=True)
     error_message: str
     stack_trace: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)

@@ -10,7 +10,7 @@ Detects:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
 from sqlmodel import Session, select
@@ -105,7 +105,7 @@ class IntentSignalDetector:
                 signal_type=SignalType.CAREER_CHANGE,
                 description=f"Title changed to: {profile_data['title']}",
                 source_url=prospect.linkedin,
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance="HIGH",
                 confidence="HIGH"
             )
@@ -118,7 +118,7 @@ class IntentSignalDetector:
                 signal_type=SignalType.HIRING_SPREE,
                 description=f"{len(profile_data['recent_company_hires'])} new hires in {profile_data['company']} recently",
                 source_url=prospect.linkedin,
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance="MEDIUM",
                 confidence="MEDIUM"
             )
@@ -151,7 +151,7 @@ class IntentSignalDetector:
                     signal_type=SignalType.AFRICA_EXHIBITION,
                     description=f"Upcoming exhibition: {expo['title']} ({expo['venue']})",
                     source_url=expo['url'],
-                    signal_date=datetime.utcnow(),
+                    signal_date=datetime.now(timezone.utc),
                     importance="HIGH",
                     confidence="HIGH"
                 )
@@ -183,7 +183,7 @@ class IntentSignalDetector:
                     signal_type=SignalType.HIRING_CURATOR,
                     description=f"Open position: {job['title']}",
                     source_url=job['url'],
-                    signal_date=datetime.utcnow(),
+                    signal_date=datetime.now(timezone.utc),
                     importance="HIGH",
                     confidence="HIGH"
                 )
@@ -216,7 +216,7 @@ class IntentSignalDetector:
                     signal_type=SignalType.GALLERY_EXPANSION,
                     description=news['title'],
                     source_url=news['url'],
-                    signal_date=datetime.utcnow(),
+                    signal_date=datetime.now(timezone.utc),
                     importance="MEDIUM",
                     confidence="MEDIUM"
                 )
@@ -233,7 +233,7 @@ class IntentSignalDetector:
         """
         from app.models import Priority
 
-        cutoff = datetime.utcnow() - timedelta(days=7)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
         recent_signals = self.session.exec(
             select(Signal).where(
                 (Signal.prospect_id == prospect.id)

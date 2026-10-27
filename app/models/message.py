@@ -2,7 +2,7 @@
 Message model — outreach messages for LinkedIn.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import Field, ForeignKey
@@ -67,6 +67,6 @@ class Message(BaseModel, table=True):
     content: str
     status: MessageStatus = Field(default=MessageStatus.DRAFT, index=True)
     outcome: MessageOutcome = Field(default=MessageOutcome.NONE, index=True)
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     sent_at: Optional[datetime] = None
     model_version: str = Field(default="1.0")

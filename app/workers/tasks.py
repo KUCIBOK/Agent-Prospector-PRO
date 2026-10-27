@@ -3,7 +3,7 @@ Celery tasks — background jobs for discovery, enrichment, scoring, etc.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Session
 
@@ -53,7 +53,7 @@ def rescore_artists_advanced(self) -> dict:
         job = Job(
             job_type=JobType.SCORING,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -66,7 +66,7 @@ def rescore_artists_advanced(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = len(results)
         session.add(job)
         session.commit()
@@ -118,7 +118,7 @@ def detect_intent_signals(self) -> dict:
         job = Job(
             job_type=JobType.INTENT_DETECTION,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -131,7 +131,7 @@ def detect_intent_signals(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = signal_count
         session.add(job)
         session.commit()
@@ -183,7 +183,7 @@ def analyze_instagram_artists(self) -> dict:
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -196,7 +196,7 @@ def analyze_instagram_artists(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = len(results)
         session.add(job)
         session.commit()
@@ -247,7 +247,7 @@ def monitor_linkedin_curators(self) -> dict:
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -260,7 +260,7 @@ def monitor_linkedin_curators(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = len(signals)
         session.add(job)
         session.commit()
@@ -310,7 +310,7 @@ def run_discovery(self) -> dict:
         job = Job(
             job_type=JobType.DISCOVERY,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -332,7 +332,7 @@ def run_discovery(self) -> dict:
 
         # Mark job as success
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = total
         session.add(job)
         session.commit()
@@ -387,7 +387,7 @@ def run_crawling(self) -> dict:
         job = Job(
             job_type=JobType.CRAWLING,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -423,7 +423,7 @@ def run_crawling(self) -> dict:
                 logger.error(f"Error crawling {prospect.name}: {str(e)}")
 
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = result_count
         session.add(job)
         session.commit()
@@ -470,7 +470,7 @@ def run_enrichment(self) -> dict:
         job = Job(
             job_type=JobType.ENRICHMENT,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -482,7 +482,7 @@ def run_enrichment(self) -> dict:
         results = enricher.bulk_enrich_prospects(limit=100)
 
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = results["enriched"]
         session.add(job)
         session.commit()
@@ -547,7 +547,7 @@ def run_scoring(self) -> dict:
         job = Job(
             job_type=JobType.SCORING,
             status=JobStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(job)
         session.commit()
@@ -628,7 +628,7 @@ def run_scoring(self) -> dict:
         session.commit()
 
         job.status = JobStatus.SUCCESS
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.result_count = result_count
         session.add(job)
         session.commit()
@@ -659,4 +659,4 @@ def run_scoring(self) -> dict:
 @app.task
 def health_check() -> dict:
     """Health check task."""
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}

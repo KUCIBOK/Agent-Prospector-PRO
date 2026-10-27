@@ -18,7 +18,7 @@ Monitors for:
 import logging
 import os
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 import requests
@@ -172,7 +172,7 @@ class LinkedInCuratorFinder:
                         signal_type=SignalType.CAREER_CHANGE,
                         description=f"Title updated: {new_title}",
                         source_url=prospect.linkedin,
-                        signal_date=datetime.utcnow(),
+                        signal_date=datetime.now(timezone.utc),
                         importance="HIGH",
                         confidence="HIGH",
                     )
@@ -187,7 +187,7 @@ class LinkedInCuratorFinder:
                         signal_type=SignalType.CAREER_CHANGE,
                         description=f"Now at: {new_company}",
                         source_url=prospect.linkedin,
-                        signal_date=datetime.utcnow(),
+                        signal_date=datetime.now(timezone.utc),
                         importance="MEDIUM",
                         confidence="HIGH",
                     )
@@ -202,7 +202,7 @@ class LinkedInCuratorFinder:
                         signal_type=SignalType.HIRING_SPREE,
                         description=f"Active networker: {recent_connections} LinkedIn connections",
                         source_url=prospect.linkedin,
-                        signal_date=datetime.utcnow(),
+                        signal_date=datetime.now(timezone.utc),
                         importance="MEDIUM",
                         confidence="MEDIUM",
                     )

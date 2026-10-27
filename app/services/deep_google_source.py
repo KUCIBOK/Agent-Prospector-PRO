@@ -12,7 +12,7 @@ Strategy:
 import logging
 import re
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -235,7 +235,7 @@ class DeepGoogleSource:
                     url=source_url or website,
                     source_type=SourceType.WEBSITE,
                     title=f"Deep Google Source: {gallery_name or 'Gallery'}",
-                    captured_at=datetime.utcnow(),
+                    captured_at=datetime.now(timezone.utc),
                 )
                 self.session.add(source)
                 self.session.commit()

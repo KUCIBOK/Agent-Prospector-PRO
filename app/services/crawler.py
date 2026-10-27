@@ -19,7 +19,7 @@ Respects:
 import logging
 import time
 from urllib.robotparser import RobotFileParser
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urljoin, urlparse
 import re
@@ -40,7 +40,7 @@ class CrawlResult:
         self.status = status  # SUCCESS, ERROR, TIMEOUT, ROBOTS_TXT
         self.data = data or {}
         self.error = error
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(timezone.utc)
 
     def __repr__(self):
         return f"<CrawlResult {self.url} {self.status}>"

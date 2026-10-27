@@ -16,7 +16,7 @@ Detects:
 import logging
 import re
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pycountry
 from sqlmodel import Session
@@ -207,7 +207,7 @@ class Enrichment:
                 updated = True
 
         if updated:
-            prospect.updated_at = datetime.utcnow()
+            prospect.updated_at = datetime.now(timezone.utc)
             self.session.add(prospect)
             self.session.commit()
             logger.info(f"✅ Enriched prospect: {prospect.name}")
@@ -244,7 +244,7 @@ class Enrichment:
                 prospect_id=prospect.id,
                 signal_type=SignalType.NEW_EXHIBITION,
                 description="Detected exhibition activity",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.MEDIUM,
                 confidence=Confidence.MEDIUM,
             )
@@ -259,7 +259,7 @@ class Enrichment:
                 prospect_id=prospect.id,
                 signal_type=SignalType.CALL_FOR_ARTISTS,
                 description="Detected call for artists",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.HIGH,
                 confidence=Confidence.MEDIUM,
             )
@@ -271,7 +271,7 @@ class Enrichment:
                 prospect_id=prospect.id,
                 signal_type=SignalType.FAIR_PARTICIPATION,
                 description="Detected fair/biennial participation",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.MEDIUM,
                 confidence=Confidence.MEDIUM,
             )
@@ -292,7 +292,7 @@ class Enrichment:
                 prospect_id=prospect.id,
                 signal_type=SignalType.INTERNATIONAL_ACTIVITY,
                 description="Detected international activity",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.MEDIUM,
                 confidence=Confidence.MEDIUM,
             )
@@ -304,7 +304,7 @@ class Enrichment:
                 prospect_id=prospect.id,
                 signal_type=SignalType.INTERNATIONAL_ACTIVITY,
                 description=f"Detected Africa interest: {prospect.africa_interest}",
-                signal_date=datetime.utcnow(),
+                signal_date=datetime.now(timezone.utc),
                 importance=Importance.HIGH if prospect.africa_interest.upper() == "HIGH" else Importance.MEDIUM,
                 confidence=Confidence.HIGH,
             )

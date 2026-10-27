@@ -2,7 +2,7 @@
 Source model — tracks data origins for every claim.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import Field, SQLModel, ForeignKey
@@ -45,4 +45,4 @@ class Source(BaseModel, table=True):
     source_type: SourceType
     title: Optional[str] = None
     captured_text_hash: Optional[str] = Field(default=None, unique=True)
-    captured_at: datetime = Field(default_factory=datetime.utcnow)
+    captured_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

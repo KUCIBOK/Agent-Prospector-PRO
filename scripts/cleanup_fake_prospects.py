@@ -84,9 +84,7 @@ def find_candidates(session: Session, keep_emails: Iterable[str]):
     keep = {e.lower() for e in keep_emails}
     with_source = set(session.exec(select(Source.prospect_id).distinct()).all())
     contacted = set(
-        session.exec(
-            select(Message.prospect_id).where(Message.status != MessageStatus.DRAFT)
-        ).all()
+        session.exec(select(Message.prospect_id).where(Message.status != MessageStatus.DRAFT)).all()
     )
 
     candidates, protected = [], []

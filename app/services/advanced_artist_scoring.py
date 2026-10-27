@@ -13,7 +13,7 @@ Result: Better identification of truly professional, market-ready artists.
 
 import logging
 from typing import Optional, List, Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 
 from sqlmodel import Session, select
@@ -329,7 +329,7 @@ class AdvancedArtistScorer:
                         signal_type=SignalType.NEW_PUBLICATION,
                         description=f"Advanced scoring: score improved from {old_score:.0f} to {new_score:.0f}. "
                         f"Bonuses: {breakdown['bonuses']}",
-                        signal_date=datetime.utcnow(),
+                        signal_date=datetime.now(timezone.utc),
                         importance="MEDIUM",
                         confidence="HIGH",
                     )

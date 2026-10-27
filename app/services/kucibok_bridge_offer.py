@@ -16,7 +16,7 @@ Rules:
 import logging
 from typing import Optional, Dict, List
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
@@ -511,7 +511,7 @@ class KucibokBridgeOffer:
             status="SENT",
             subject=f"Kucibok Bridge — Plateforme de sourcing",
             body=message,
-            sent_at=datetime.utcnow(),
+            sent_at=datetime.now(timezone.utc),
         )
 
         self.session.add(msg)

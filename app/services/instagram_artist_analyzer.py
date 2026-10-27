@@ -21,7 +21,7 @@ Free approach: BeautifulSoup + requests (respects rate limits).
 import logging
 import os
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 
 from sqlmodel import Session, select
@@ -350,7 +350,7 @@ class InstagramArtistAnalyzer:
                         description=f"Instagram: {analysis.get('followers')} followers, "
                         f"{analysis.get('engagement_rate', 0):.1f}% engagement",
                         source_url=f"https://instagram.com/{artist.instagram}",
-                        signal_date=datetime.utcnow(),
+                        signal_date=datetime.now(timezone.utc),
                         importance="HIGH" if analysis.get("maturity_level") == "ESTABLISHED" else "MEDIUM",
                         confidence="HIGH",
                     )

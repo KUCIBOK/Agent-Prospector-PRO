@@ -13,7 +13,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
@@ -129,7 +129,7 @@ class EmailService:
         if success:
             # Update message status
             message.status = MessageStatus.SENT
-            message.sent_at = datetime.utcnow()
+            message.sent_at = datetime.now(timezone.utc)
             self.session.add(message)
             self.session.commit()
 

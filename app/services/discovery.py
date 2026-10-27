@@ -14,7 +14,7 @@ Data sources (free):
 
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 import requests
@@ -243,7 +243,7 @@ class DiscoveryEngine:
                 url=source_url,
                 source_type=SourceType.WEBSITE,
                 title=f"Discovery: {name}",
-                captured_at=datetime.utcnow(),
+                captured_at=datetime.now(timezone.utc),
             )
             self.session.add(source)
             self.session.commit()
